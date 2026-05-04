@@ -1,4 +1,4 @@
-# GradeFlow AI (Hybrid Pipeline)
+# GradeOps AI (Hybrid Pipeline)
 A semi-automated grading system that combines heuristic rules, AI-assisted evaluation, and human validation to process classroom submissions at scale.
 
 ## Why I built this
