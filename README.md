@@ -34,10 +34,12 @@ gradeops/
 ├── src/
 ├── tests/
 └── output/
-    └── course_name-activity_name
-        ├── grading_results.csv
-        ├── logActivity.yaml
-        └── attachments/
+     └── course_name/
+          └── activity_name/
+               ├── resumen_entregas.csv
+               ├── logActivity.yaml
+               └── attachments/
+
 ```
 ---
 
