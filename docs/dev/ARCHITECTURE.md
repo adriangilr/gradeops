@@ -16,19 +16,22 @@ The system focuses on:
 
 ---
 
-##  High-Level Flow
+
+## High-Level Flow
 
 ```mermaid
 flowchart TD
-	A[User CLI Input] --> B[Course Selection]
-	B --> C[Download Submissions]
-	C --> D[File Processing]
-	D --> E[Rules Engine Evaluation]
-	E --> F[Auto Score + Feedback]
-	F --> G[CSV Export]
-	G --> H[Optional AI Enrichment]
+    A[User CLI Input] --> B[Course Selection]
+    B --> C[Download Submissions]
+    C --> D[File Processing]
+    D --> E[Rules Engine Evaluation]
+    E --> F[Auto Score + Feedback]
+    F --> G[CSV Export]
+    G --> H[Optional AI Enrichment]
+```
 
 ---
+
 
 ## Core Components
 
