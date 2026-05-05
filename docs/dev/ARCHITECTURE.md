@@ -214,3 +214,13 @@ This design prioritizes:
 -Extensibility (rules → ML transition)
 -Real-world usability (educational workflows)
 -Portfolio clarity (easy to explain in interviews)
+
+
+---
+
+##  About
+
+Built by Adrian Gil  
+Data Analyst | Operational Analytics  
+
+Focused on building practical data tools for real-world workflows.
