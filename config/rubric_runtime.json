@@ -1,13 +1,8 @@
 {
     "schema_version": "rubric_runtime_v1",
-    "generated_at": "2026-05-09T21:39:21.365630",
+    "generated_at": "2026-05-09T22:32:15.538677",
     "source_file": "config/Rubric.xlsx",
     "rubrics": [
-        {
-            "sheet_name": "CONFIG",
-            "rubric_id": null,
-            "criteria": []
-        },
         {
             "sheet_name": "SE_T01",
             "rubric_id": "SE_T01",
@@ -47,7 +42,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "t01",
@@ -97,7 +92,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "ventajas",
@@ -131,7 +126,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "caracteristicas",
@@ -187,7 +182,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "t02",
@@ -217,7 +212,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "reglas",
@@ -247,7 +242,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "elementos",
@@ -256,7 +251,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "estructura",
@@ -286,7 +281,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "ejemplo",
@@ -342,7 +337,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "p01",
@@ -458,7 +453,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "p02",
@@ -488,7 +483,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "crear",
@@ -501,7 +496,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "actualizar",
@@ -575,7 +570,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "paso",
@@ -631,7 +626,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "t01",
@@ -681,7 +676,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "casos de uso",
@@ -711,7 +706,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama de secuencia",
@@ -741,7 +736,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama de clases",
@@ -771,7 +766,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama de estados",
@@ -801,7 +796,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "entidad relacion",
@@ -810,7 +805,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "erd",
@@ -840,7 +835,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "decomposicion",
@@ -849,7 +844,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "descomposicion",
@@ -879,7 +874,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama",
@@ -909,7 +904,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "integracion",
@@ -1005,7 +1000,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "t01",
@@ -1075,7 +1070,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "indice",
@@ -1105,7 +1100,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "descripcion",
@@ -1135,7 +1130,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama de maquina de estados",
@@ -1144,7 +1139,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "matriz de requerimientos",
@@ -1174,7 +1169,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "viabilidad",
@@ -1204,7 +1199,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "objetivos",
@@ -1242,7 +1237,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "riesgos",
@@ -1255,7 +1250,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "contencion",
@@ -1285,7 +1280,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "id",
@@ -1331,7 +1326,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "gantt",
@@ -1340,7 +1335,7 @@
                             ]
                         },
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "planeacion",
@@ -1370,7 +1365,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "casos de uso",
@@ -1400,7 +1395,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama de secuencia",
@@ -1430,7 +1425,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "diagrama de clases",
@@ -1460,7 +1455,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "estados",
@@ -1490,7 +1485,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "modular",
@@ -1520,7 +1515,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "integracion",
@@ -1550,7 +1545,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "sistema",
@@ -1580,7 +1575,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "reporte de pruebas",
@@ -1610,7 +1605,7 @@
                     },
                     "matched_keywords": [
                         {
-                            "type": "GROUP",
+                            "type": "AND_GROUP",
                             "keywords": [
                                 {
                                     "term": "conclusiones",
@@ -1626,16 +1621,6 @@
                     "language": "es"
                 }
             ]
-        },
-        {
-            "sheet_name": "README",
-            "rubric_id": null,
-            "criteria": []
-        },
-        {
-            "sheet_name": "NS",
-            "rubric_id": null,
-            "criteria": []
         }
     ]
 }

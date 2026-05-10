@@ -97,7 +97,16 @@ MIME_TO_EXT = {
 
 
 
-LANG = "es"
+DEFAULT_LANGUAGE = "es"
+
+def get_runtime_language() -> str:
+    """
+    Futuro punto central para cargar idioma desde config/runtime.
+    """
+    return DEFAULT_LANGUAGE
+
+
+LANG = get_runtime_language()
 
 I18N = {
     "es": {
@@ -516,7 +525,6 @@ CSV_OUTPUT_COLUMNS = [
     "final_feedback",
 ]
 
-TEXT_LABELS = labels()
 
 
 def normalize_basic_ascii(text: str) -> str:
@@ -535,9 +543,9 @@ def bool_to_text(value: bool) -> str:
 
 def get_submission_status(submission: dict[str, Any]) -> str:
     state = (submission.get("state") or "").upper()
-    return TEXT_LABELS["submission_status"].get(
+    return labels()["submission_status"].get(
         state,
-        TEXT_LABELS["submission_status"]["UNKNOWN"],
+        labels()["submission_status"]["UNKNOWN"],
     )
 
 
@@ -552,10 +560,10 @@ def detect_submission_type(
     attachments = get_attachments(submission)
 
     if not attachments and readable_content:
-        return TEXT_LABELS["submission_type"]["text_only"]
+        return labels()["submission_type"]["text_only"]
 
     if not attachments and not downloaded_paths:
-        return TEXT_LABELS["submission_type"]["none"]
+        return labels()["submission_type"]["none"]
 
     tiene_imagen = contains_images(downloaded_paths)
     tiene_archivo_no_imagen = any(
@@ -569,14 +577,14 @@ def detect_submission_type(
     )
 
     if tiene_imagen and tiene_archivo_no_imagen:
-        return TEXT_LABELS["submission_type"]["mixed"]
+        return labels()["submission_type"]["mixed"]
     if tiene_imagen and not tiene_archivo_no_imagen:
-        return TEXT_LABELS["submission_type"]["image_only"]
+        return labels()["submission_type"]["image_only"]
     if tiene_archivo_no_imagen:
-        return TEXT_LABELS["submission_type"]["file_only"]
+        return labels()["submission_type"]["file_only"]
     if tiene_links:
-        return TEXT_LABELS["submission_type"]["link_only"]
-    return TEXT_LABELS["submission_type"]["none"]
+        return labels()["submission_type"]["link_only"]
+    return labels()["submission_type"]["none"]
 
 
 def calculate_confidence_score(
@@ -607,9 +615,9 @@ def calculate_confidence_score(
     if keyword_hits_count > 0:
         score += min(0.10, keyword_hits_count * 0.05)
 
-    if submission_type == TEXT_LABELS["submission_type"]["mixed"]:
+    if submission_type == labels()["submission_type"]["mixed"]:
         score -= 0.10
-    if submission_type == TEXT_LABELS["submission_type"]["image_only"]:
+    if submission_type == labels()["submission_type"]["image_only"]:
         score -= 0.25
     if manual_review:
         score -= 0.30
@@ -1163,16 +1171,18 @@ def build_rubric_runtime_json(
             }
 
             rubric["criteria"].append(criterion_runtime)
-            
-            criteria_detected = len(rubric["criteria"])
-            
-            if DEBUG_RUBRICS:
-                print(f"\n📄 Sheet: {sheet.title}")
-                print(f"   header_row: {header_row_index + 1}")
-                print(f"   headers: {headers}")
-                print(f"   criteria_detected: {criteria_detected}")           
+        
+        criteria_detected = len(rubric["criteria"])
+        
+        if DEBUG_RUBRICS:
+            print(f"\n📄 Sheet: {sheet.title}")
+            print(f"   header_row: {header_row_index + 1}")
+            print(f"   headers: {headers}")
+            print(f"   criteria_detected: {criteria_detected}")
 
-        runtime_data["rubrics"].append(rubric)
+        if rubric["criteria"]:
+            runtime_data["rubrics"].append(rubric)
+
 
     output_dir = os.path.dirname(output_json_path)
     if output_dir:
@@ -1282,7 +1292,7 @@ def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
                 })
 
         groups.append({
-            "type": "GROUP",
+            "type": "AND_GROUP",
             "keywords": and_keywords,
         })
 
@@ -2741,7 +2751,7 @@ def process_activity(
                 "auto_feedback": t("feedback.no_submission"),
                 "auto_grading_reason": t("feedback.reason_no_submission"),
                 "confidence_score": 1.0,
-                "submission_type": TEXT_LABELS["submission_type"]["none"],
+                "submission_type": labels()["submission_type"]["none"],
                 "primary_file_type": "",
                 "late_penalty": 0,
                 "days_late": 0,
