@@ -1201,23 +1201,90 @@ def get_rubric_schema_version(workbook) -> str:
 
 
 # FUTURE MODULE: src/rubrics/validator.py
+
+def normalize_rubric_header(value: Any) -> str:
+    text = normalize_basic_ascii(str(value or "").strip().lower())
+    text = text.replace("-", "_").replace("/", "_")
+    text = re.sub(r"[^a-z0-9_]+", "_", text)
+    text = re.sub(r"_+", "_", text).strip("_")
+    return text
+
+
+def detect_sheet_headers(rows: list[tuple[Any, ...]]) -> tuple[int, list[str]]:
+    """
+    Detecta headers mínimos compatibles para tabs de rúbrica.
+    """
+    expected = {
+        "criterion_name",
+        "criterion_id",
+        "max_score",
+    }
+
+    best_index = 0
+    best_headers: list[str] = []
+    best_score = -1
+
+    for idx, row in enumerate(rows[:20]):
+
+        headers = [
+            normalize_rubric_header(cell)
+            for cell in row
+        ]
+
+        score = len(set(headers) & expected)
+
+        if score > best_score:
+            best_index = idx
+            best_headers = headers
+            best_score = score
+
+    return best_index, best_headers
+
+
+def get_config_activity_names(config_sheet) -> list[str]:
+    """
+    Busca actividades declaradas en CONFIG.
+
+    Esperado:
+    Columna B -> Activity Name
+    Columna C -> SE_T01
+    """
+
+    activities = []
+
+    for row in config_sheet.iter_rows(values_only=True):
+
+        if len(row) < 3:
+            continue
+
+        label = str(row[1] or "").strip().lower()
+        value = str(row[2] or "").strip()
+
+        if label == "activity name" and value:
+            activities.append(value)
+
+    return activities
+
+
 def validate_rubric_xlsx(
     workbook,
     schema_version: str,
+    rubric_xlsx_path: str = "",
 ) -> dict[str, Any]:
     """
-    Valida compatibilidad y estructura mínima del Rubric.xlsx
-    antes de generar rubric_runtime.json.
+    Validación mínima y mantenible de Rubric.xlsx.
 
-    Diseñado para evolucionar después a:
-    - src/rubrics/validator.py
-    - compatibility layer
-    - migration engine
+    Reglas actuales:
+    - Nombre correcto: Rubric.xlsx
+    - Tabs mínimas: CONFIG y README
+    - Cada Activity Name en CONFIG debe existir como tab
+    - Cada tab de actividad debe tener al menos 1 criterio
+    - La suma de max_score debe coincidir con B8
     """
 
     validation_result = {
         "valid": True,
-        "schema_version": "unknown",
+        "schema_version": schema_version or "unknown",
         "errors": [],
         "warnings": [],
         "stats": {
@@ -1226,11 +1293,45 @@ def validate_rubric_xlsx(
         },
     }
 
-    required_headers = {
-        "criterion_name",
-        "criterion_id",
-        "rubric_id",
+    expected_filename = "rubric.xlsx"
+
+    if rubric_xlsx_path:
+        current_name = os.path.basename(rubric_xlsx_path).lower()
+
+        if current_name != expected_filename:
+            validation_result["errors"].append(
+                f"Invalid rubric filename: '{current_name}'. Expected 'Rubric.xlsx'."
+            )
+
+    required_tabs = {
+        "CONFIG",
+        "README",
     }
+
+    workbook_tabs = {
+        sheet.upper()
+        for sheet in workbook.sheetnames
+    }
+
+    missing_tabs = required_tabs - workbook_tabs
+
+    if missing_tabs:
+        validation_result["errors"].append(
+            f"Missing required tabs: {sorted(missing_tabs)}"
+        )
+
+    if "CONFIG" not in workbook.sheetnames:
+        validation_result["valid"] = False
+        return validation_result
+
+    config_sheet = workbook["CONFIG"]
+
+    activity_names = get_config_activity_names(config_sheet)
+
+    if not activity_names:
+        validation_result["warnings"].append(
+            "No Activity Name rows detected in CONFIG."
+        )
 
     known_system_tabs = {
         "CONFIG",
@@ -1238,50 +1339,28 @@ def validate_rubric_xlsx(
         "NS",
     }
 
-    criterion_ids_seen = set()
+    for activity_name in activity_names:
 
-    if "CONFIG" not in workbook.sheetnames:
-        validation_result["errors"].append(
-            "Missing required CONFIG tab."
-        )
-
-    if not schema_version:
-        validation_result["errors"].append(
-            "Missing schema_version."
-        )
-
-    for sheet in workbook.worksheets:
-
-        if sheet.title.upper() in known_system_tabs:
+        if activity_name not in workbook.sheetnames:
+            validation_result["errors"].append(
+                f"Activity '{activity_name}' declared in CONFIG does not exist as tab."
+            )
             continue
+
+        sheet = workbook[activity_name]
 
         rows = list(sheet.iter_rows(values_only=True))
 
         if not rows:
-            validation_result["warnings"].append(
-                f"Sheet '{sheet.title}' is empty."
+            validation_result["errors"].append(
+                f"Activity tab '{activity_name}' is empty."
             )
             continue
 
-        try:
-            header_row_index, headers = find_header_row(rows)
-        except Exception:
-            validation_result["errors"].append(
-                f"Could not detect valid headers in sheet '{sheet.title}'."
-            )
-            continue
+        header_row_index, headers = detect_sheet_headers(rows)
 
-        detected_headers = set(h for h in headers if h)
-
-        missing_headers = required_headers - detected_headers
-
-        if missing_headers:
-            validation_result["errors"].append(
-                f"Sheet '{sheet.title}' missing required headers: "
-                f"{sorted(missing_headers)}"
-            )
-
-        sheet_criteria = 0
+        criteria_detected = 0
+        max_score_sum = 0
 
         for row in rows[header_row_index + 1:]:
 
@@ -1291,64 +1370,64 @@ def validate_rubric_xlsx(
                 if headers[i]
             }
 
-            criterion_id = str(item.get("criterion_id") or "").strip()
-            criterion_name = str(item.get("criterion_name") or "").strip()
-            rubric_id = str(item.get("rubric_id") or "").strip()
-
-            if not criterion_id and not criterion_name:
-                continue
-
-            sheet_criteria += 1
-
-            if not criterion_id:
-                validation_result["errors"].append(
-                    f"Sheet '{sheet.title}' has criterion without criterion_id."
-                )
-
-            if not rubric_id:
-                validation_result["warnings"].append(
-                    f"Sheet '{sheet.title}' has criterion without rubric_id."
-                )
-
-            if criterion_id:
-
-                if criterion_id in criterion_ids_seen:
-                    validation_result["errors"].append(
-                        f"Duplicated criterion_id detected: {criterion_id}"
-                    )
-
-                criterion_ids_seen.add(criterion_id)
-
-            max_score = item.get("max_score")
-
-            if max_score not in (None, ""):
-                try:
-                    int(float(max_score))
-                except Exception:
-                    validation_result["errors"].append(
-                        f"Invalid max_score in criterion '{criterion_id}'."
-                    )
-
-            matched_keywords = str(
-                item.get("matched_keywords") or ""
+            criterion_name = str(
+                item.get("criterion_name") or ""
             ).strip()
 
-            if matched_keywords and matched_keywords.upper() != "N/A":
+            if not criterion_name:
+                continue
 
-                invalid_tokens = [
-                    token
-                    for token in matched_keywords.split(",")
-                    if token.count("-") > 1
-                ]
+            criteria_detected += 1
 
-                if invalid_tokens:
-                    validation_result["warnings"].append(
-                        f"Possible malformed matched_keywords in "
-                        f"criterion '{criterion_id}'."
-                    )
+            try:
+                max_score_sum += int(float(item.get("max_score") or 0))
+            except Exception:
+                validation_result["errors"].append(
+                    f"Invalid max_score detected in '{activity_name}'."
+                )
+
+        if criteria_detected == 0:
+            validation_result["errors"].append(
+                f"Activity '{activity_name}' has no valid criteria."
+            )
 
         validation_result["stats"]["rubrics"] += 1
-        validation_result["stats"]["criteria"] += sheet_criteria
+        validation_result["stats"]["criteria"] += criteria_detected
+
+        expected_total = config_sheet["B8"].value
+
+        if expected_total not in (None, ""):
+
+            try:
+                expected_total = int(float(expected_total))
+
+                if max_score_sum != expected_total:
+                    validation_result["warnings"].append(
+                        f"Activity '{activity_name}' total max_score={max_score_sum} "
+                        f"does not match CONFIG B8={expected_total}."
+                    )
+
+            except Exception:
+                validation_result["warnings"].append(
+                    "CONFIG B8 max_score reference is invalid."
+                )
+
+    runtime_tabs = [
+        tab
+        for tab in workbook.sheetnames
+        if tab.upper() not in known_system_tabs
+    ]
+
+    undeclared_tabs = [
+        tab
+        for tab in runtime_tabs
+        if tab not in activity_names
+    ]
+
+    if undeclared_tabs:
+        validation_result["warnings"].append(
+            f"Tabs not declared in CONFIG Activity Name rows: {undeclared_tabs}"
+        )
 
     if validation_result["errors"]:
         validation_result["valid"] = False
@@ -1514,6 +1593,7 @@ def build_rubric_runtime_json(
     validation_result = validate_rubric_xlsx(
         workbook=workbook,
         schema_version=schema_version,
+        rubric_xlsx_path=rubric_xlsx_path,
     )
 
     if not validation_result["valid"]:
