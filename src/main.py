@@ -22,7 +22,6 @@ from src.config import ensure_directories, get_settings
 from src.utils.naming import construir_nombre_portfolio as build_portfolio_name
 from src.config import NAMING_MODE, MAX_FOLDER_NAME_LEN
 
-from openpyxl import load_workbook
 
 try:
     from PyPDF2 import PdfReader  # type: ignore
@@ -43,6 +42,7 @@ except Exception:
 # Configuración general
 # ==========================================================
 
+DEBUG_RUBRICS = False
 RECENT_DAYS = 30
 AUTOGRADING_CONFIG_FILENAME = "autograding_rules.json"
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tiff", ".tif"}
@@ -930,97 +930,203 @@ def merge_config(base: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
 
     return result
 
-# comienazan cambios para transofrmar rubric
 
 def build_rubric_runtime_json(
-    rubric_xlsx_path="config/Rubric.xlsx",
-    output_json_path="config/rubric_runtime.json",
+    rubric_xlsx_path: str = "config/Rubric.xlsx",
+    output_json_path: str = "config/rubric_runtime.json",
+    debug: bool = True,
 ) -> dict[str, Any]:
     """
-    Convierte Rubric.xlsx a un JSON interno estandarizado
-    para pruebas de integracion del rubric engine.
+    Convierte Rubric.xlsx a un JSON interno estandarizado.
 
-    Objetivo:
-    - NO romper el flujo actual
-    - NO modificar el schema actual del CSV
-    - Crear una capa intermedia estable
-    - Facilitar compatibilidad futura
-
-    Requiere:
-    pip install openpyxl
-
-    Estructura esperada del XLSX:
-    - 1 tab = 1 rubrica/materia
-    - Primera fila = headers
-
-    Campos esperados:
-    category
-    criterion_name
-    4-accomplished
-    3-competent
-    2-developing
-    1-beginning
-    0-not_accomplished
-    obtained_score
-    max_score
-    matched_keywords
-    status
-    manual_review
-    criterion_id
-    rubric_id
+    Mejora clave:
+    - Detecta automaticamente la fila real de headers.
+    - Normaliza headers: mayusculas, espacios, acentos y variantes comunes.
+    - No rompe el flujo actual: solo genera config/rubric_runtime.json.
     """
 
     try:
         from openpyxl import load_workbook
     except Exception as err:
         raise RuntimeError(
-            "openpyxl no instalado. Ejecuta: pip install openpyxl"
+            "openpyxl no instalado. Ejecuta: python -m pip install openpyxl"
         ) from err
+
+    if not os.path.exists(rubric_xlsx_path):
+        print(f"⚠️ Rubric XLSX no encontrado: {rubric_xlsx_path}")
+        return {
+            "schema_version": "rubric_runtime_v1",
+            "generated_at": datetime.now().isoformat(),
+            "source_file": rubric_xlsx_path,
+            "rubrics": [],
+        }
+
+    def normalize_header(value: Any) -> str:
+        raw = normalize_basic_ascii(str(value or "").strip().lower())
+        raw = raw.replace("-", "_").replace("/", "_").replace(".", "_")
+        raw = re.sub(r"[^a-z0-9_]+", "_", raw)
+        raw = re.sub(r"_+", "_", raw).strip("_")
+
+        aliases = {
+            "categoria": "category",
+            "category": "category",
+
+            "criterio": "criterion_name",
+            "nombre_criterio": "criterion_name",
+            "criterion": "criterion_name",
+            "criterion_name": "criterion_name",
+
+            "id_criterio": "criterion_id",
+            "criterio_id": "criterion_id",
+            "criterion_id": "criterion_id",
+
+            "id_rubrica": "rubric_id",
+            "rubrica_id": "rubric_id",
+            "rubric_id": "rubric_id",
+
+            "puntaje_obtenido": "obtained_score",
+            "calificacion_obtenida": "obtained_score",
+            "obtained_score": "obtained_score",
+
+            "puntaje_maximo": "max_score",
+            "calificacion_maxima": "max_score",
+            "max_score": "max_score",
+
+            "keywords": "matched_keywords",
+            "keyword_hits": "matched_keywords",
+            "matched_keywords": "matched_keywords",
+            "palabras_clave": "matched_keywords",
+
+            "estado": "status",
+            "status": "status",
+
+            "revision_manual": "manual_review",
+            "manual_review": "manual_review",
+        }
+
+        level_aliases = {
+            "4_accomplished": "4-accomplished",
+            "4_accomplished_": "4-accomplished",
+            "accomplished": "4-accomplished",
+            "logrado": "4-accomplished",
+
+            "3_competent": "3-competent",
+            "competent": "3-competent",
+            "competente": "3-competent",
+
+            "2_developing": "2-developing",
+            "developing": "2-developing",
+            "en_desarrollo": "2-developing",
+
+            "1_beginning": "1-beginning",
+            "beginning": "1-beginning",
+            "inicial": "1-beginning",
+
+            "0_not_accomplished": "0-not_accomplished",
+            "not_accomplished": "0-not_accomplished",
+            "no_logrado": "0-not_accomplished",
+        }
+
+        return aliases.get(raw, level_aliases.get(raw, raw))
+
+    def normalize_headers(row: tuple[Any, ...]) -> list[str]:
+        headers: list[str] = []
+        used: dict[str, int] = {}
+
+        for cell in row:
+            header = normalize_header(cell)
+            if not header:
+                headers.append("")
+                continue
+
+            # Evita headers duplicados sin romper el parseo.
+            if header in used:
+                used[header] += 1
+                header = f"{header}_{used[header]}"
+            else:
+                used[header] = 1
+
+            headers.append(header)
+
+        return headers
+
+    def find_header_row(rows: list[tuple[Any, ...]]) -> tuple[int, list[str]]:
+        """
+        Busca la fila de headers en las primeras filas.
+        Esto soporta tabs con titulo, metadata o instrucciones antes de la tabla.
+        """
+        expected = {
+            "category",
+            "criterion_name",
+            "criterion_id",
+            "rubric_id",
+            "max_score",
+            "matched_keywords",
+        }
+
+        best_index = 0
+        best_headers: list[str] = []
+        best_score = -1
+
+        for idx, row in enumerate(rows[:25]):
+            headers = normalize_headers(row)
+            score = len(set(headers) & expected)
+
+            # Header minimo util: criterion_name o criterion_id.
+            if score > best_score:
+                best_index = idx
+                best_headers = headers
+                best_score = score
+
+        return best_index, best_headers
 
     workbook = load_workbook(rubric_xlsx_path, data_only=True)
 
     runtime_data: dict[str, Any] = {
         "schema_version": "rubric_runtime_v1",
         "generated_at": datetime.now().isoformat(),
+        "source_file": rubric_xlsx_path,
         "rubrics": [],
     }
 
     for sheet in workbook.worksheets:
-
         rows = list(sheet.iter_rows(values_only=True))
 
         if not rows:
             continue
 
-        headers = [
-            str(h).strip() if h is not None else ""
-            for h in rows[0]
-        ]
-
+        header_row_index, headers = find_header_row(rows)        
         rubric = {
             "sheet_name": sheet.title,
             "rubric_id": None,
             "criteria": [],
         }
 
-        for row in rows[1:]:
-
+        for row in rows[header_row_index + 1:]:
             if row is None:
                 continue
 
             item = {
                 headers[i]: row[i]
                 for i in range(min(len(headers), len(row)))
+                if headers[i]
             }
 
             criterion_id = str(item.get("criterion_id") or "").strip()
             criterion_name = str(item.get("criterion_name") or "").strip()
+            category = str(item.get("category") or "").strip()
 
-            # ignora filas vacias
+            # Ignora filas vacias, notas o instrucciones sin criterio.
+            if not criterion_id and not criterion_name and not category:
+                continue
+
+            # Evita que tabs como CONFIG/README se vuelvan criterios basura.
             if not criterion_id and not criterion_name:
                 continue
 
             rubric_id = str(item.get("rubric_id") or "").strip()
+            if not rubric_id:
+                rubric_id = sheet.title if sheet.title.upper() not in {"CONFIG", "README"} else ""
 
             if rubric["rubric_id"] is None and rubric_id:
                 rubric["rubric_id"] = rubric_id
@@ -1028,11 +1134,10 @@ def build_rubric_runtime_json(
             criterion_runtime = {
                 "criterion_id": criterion_id,
                 "rubric_id": rubric_id,
-                "category": str(item.get("category") or "").strip(),
+                "category": category,
                 "criterion_name": criterion_name,
                 "max_score": safe_int(item.get("max_score"), 0),
 
-                # niveles
                 "levels": {
                     "4": str(item.get("4-accomplished") or "").strip(),
                     "3": str(item.get("3-competent") or "").strip(),
@@ -1041,31 +1146,37 @@ def build_rubric_runtime_json(
                     "0": str(item.get("0-not_accomplished") or "").strip(),
                 },
 
-                # heuristicas
                 "matched_keywords": parse_keywords_runtime(
                     item.get("matched_keywords")
                 ),
-
-                # flags
                 "manual_review": normalize_bool(
                     item.get("manual_review")
                 ),
-
-                # placeholders runtime
                 "obtained_score": safe_int(
                     item.get("obtained_score"),
                     0,
                 ),
                 "status": str(item.get("status") or "").strip(),
 
-                # compatibilidad futura
                 "compatibility_mode": "hybrid",
                 "language": LANG,
             }
 
             rubric["criteria"].append(criterion_runtime)
+            
+            criteria_detected = len(rubric["criteria"])
+            
+            if DEBUG_RUBRICS:
+                print(f"\n📄 Sheet: {sheet.title}")
+                print(f"   header_row: {header_row_index + 1}")
+                print(f"   headers: {headers}")
+                print(f"   criteria_detected: {criteria_detected}")           
 
         runtime_data["rubrics"].append(rubric)
+
+    output_dir = os.path.dirname(output_json_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
 
     with open(output_json_path, "w", encoding="utf-8") as f:
         json.dump(
@@ -1078,7 +1189,6 @@ def build_rubric_runtime_json(
     print(f"✅ Rubric runtime JSON generado: {output_json_path}")
 
     return runtime_data
-
 
 def safe_int(value: Any, default: int = 0) -> int:
     try:

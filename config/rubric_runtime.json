@@ -1,6 +1,7 @@
 {
     "schema_version": "rubric_runtime_v1",
-    "generated_at": "2026-05-09T20:47:21.136686",
+    "generated_at": "2026-05-09T21:39:21.365630",
+    "source_file": "config/Rubric.xlsx",
     "rubrics": [
         {
             "sheet_name": "CONFIG",
@@ -9,33 +10,1622 @@
         },
         {
             "sheet_name": "SE_T01",
-            "rubric_id": null,
-            "criteria": []
+            "rubric_id": "SE_T01",
+            "criteria": [
+                {
+                    "criterion_id": "MGM_001",
+                    "rubric_id": "SE_T01",
+                    "category": "Gestión",
+                    "criterion_name": "Puntualidad",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "La entrega se realiza en tiempo y forma.",
+                        "3": "N/A",
+                        "2": "Entrega tardía con impacto parcial en la revisión.",
+                        "1": "N/A",
+                        "0": "Entrega fuera del periodo establecido."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_001",
+                    "rubric_id": "SE_T01",
+                    "category": "Documentación",
+                    "criterion_name": "Formato de entrega",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "Cumple con el formato solicitado y nombre correcto del archivo.",
+                        "3": "N/A",
+                        "2": "El formato presenta inconsistencias relevantes.",
+                        "1": "N/A",
+                        "0": "El archivo no sigue el formato indicado."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "t01",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "RSC_001",
+                    "rubric_id": "SE_T01",
+                    "category": "Investigación",
+                    "criterion_name": "Identificación de metodologías ágiles",
+                    "max_score": 20,
+                    "levels": {
+                        "4": "Identifica correctamente al menos 3 metodologías ágiles solicitadas.",
+                        "3": "Identifica la mayoría de las metodologías requeridas.",
+                        "2": "Identifica parcialmente las metodologías solicitadas.",
+                        "1": "Menciona metodologías sin claridad o correspondencia.",
+                        "0": "No identifica metodologías ágiles."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "ANL_001",
+                    "rubric_id": "SE_T01",
+                    "category": "Análisis",
+                    "criterion_name": "Ventajas y desventajas",
+                    "max_score": 30,
+                    "levels": {
+                        "4": "Explica claramente ventajas y desventajas de cada metodología.",
+                        "3": "Explica parcialmente ventajas y desventajas.",
+                        "2": "Presenta información limitada o incompleta.",
+                        "1": "La explicación es confusa o superficial.",
+                        "0": "No incluye ventajas ni desventajas."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "ventajas",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "desventajas",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CNT_001",
+                    "rubric_id": "SE_T01",
+                    "category": "Contenido",
+                    "criterion_name": "Características de metodologías ágiles",
+                    "max_score": 30,
+                    "levels": {
+                        "4": "Describe correctamente las características principales de cada metodología.",
+                        "3": "Describe la mayoría de las características relevantes.",
+                        "2": "Las características son generales o incompletas.",
+                        "1": "La descripción carece de claridad técnica.",
+                        "0": "No describe características."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "caracteristicas",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                }
+            ]
         },
         {
             "sheet_name": "SE_T02",
-            "rubric_id": null,
-            "criteria": []
+            "rubric_id": "SE_T02",
+            "criteria": [
+                {
+                    "criterion_id": "MGM_001",
+                    "rubric_id": "SE_T02",
+                    "category": "Gestión",
+                    "criterion_name": "Puntualidad",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "La entrega se realiza en tiempo y forma.",
+                        "3": "N/A",
+                        "2": "Entrega tardía con impacto parcial en la revisión.",
+                        "1": "N/A",
+                        "0": "Entrega fuera del periodo establecido."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_001",
+                    "rubric_id": "SE_T02",
+                    "category": "Documentación",
+                    "criterion_name": "Formato de entrega",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "Cumple con el formato solicitado y nombre correcto del archivo.",
+                        "3": "N/A",
+                        "2": "El formato presenta inconsistencias relevantes.",
+                        "1": "N/A",
+                        "0": "El archivo no sigue el formato indicado."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "t02",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_001",
+                    "rubric_id": "SE_T02",
+                    "category": "Contenido",
+                    "criterion_name": "Reglas de representación del diagrama",
+                    "max_score": 25,
+                    "levels": {
+                        "4": "Explica correctamente las reglas y notación del tipo de diagrama presentado.",
+                        "3": "Explica la mayoría de las reglas requeridas.",
+                        "2": "La explicación es parcial o limitada.",
+                        "1": "La representación no corresponde al estándar solicitado.",
+                        "0": "No describe reglas de representación."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "reglas",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_002",
+                    "rubric_id": "SE_T02",
+                    "category": "Contenido",
+                    "criterion_name": "Elementos estructurales del diagrama",
+                    "max_score": 25,
+                    "levels": {
+                        "4": "Describe correctamente los elementos del diagrama y su uso dentro del sistema.",
+                        "3": "Describe la mayoría de los elementos relevantes.",
+                        "2": "La descripción es parcial o poco clara.",
+                        "1": "La explicación presenta errores importantes.",
+                        "0": "No describe elementos estructurales."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "elementos",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "estructura",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_003",
+                    "rubric_id": "SE_T02",
+                    "category": "Contenido",
+                    "criterion_name": "Ejemplos del diagrama",
+                    "max_score": 30,
+                    "levels": {
+                        "4": "Presenta al menos 3 ejemplos correctos y cumplen con el estandarde UML.",
+                        "3": "Presenta ejemplos adecuados con ligeros detalles faltantes.",
+                        "2": "Los ejemplos son insuficientes o parcialmente correctos.",
+                        "1": "Los ejemplos son incorrectos o poco relacionados.",
+                        "0": "No incluye ejemplos."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "ejemplo",
+                                    "min_occurrences": 3
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                }
+            ]
         },
         {
             "sheet_name": "SE_P01",
-            "rubric_id": null,
-            "criteria": []
+            "rubric_id": "SE_P01",
+            "criteria": [
+                {
+                    "criterion_id": "MGM_001",
+                    "rubric_id": "SE_P01",
+                    "category": "Gestión",
+                    "criterion_name": "Puntualidad",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "La entrega se realiza en tiempo y forma.",
+                        "3": "N/A",
+                        "2": "Entrega tardía con impacto parcial en la revisión.",
+                        "1": "N/A",
+                        "0": "Entrega fuera del periodo establecido."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_001",
+                    "rubric_id": "SE_P01",
+                    "category": "Documentación",
+                    "criterion_name": "Formato de entrega",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "Cumple con el formato solicitado y nombre correcto del archivo.",
+                        "3": "N/A",
+                        "2": "El formato presenta inconsistencias relevantes.",
+                        "1": "N/A",
+                        "0": "El archivo no sigue el formato indicado."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "p01",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "PLAN_001",
+                    "rubric_id": "SE_P01",
+                    "category": "Planeación",
+                    "criterion_name": "Estructura del timing plan",
+                    "max_score": 25,
+                    "levels": {
+                        "4": "El timing plan presenta actividades, dependencias y milestones claramente definidos.",
+                        "3": "El timing plan cubre la mayoría de actividades relevantes requeridas en el proyecto.",
+                        "2": "El timing plan presenta actividades incompletas o poco detalladas.",
+                        "1": "La estructura del timing plan es limitada o inconsistente.",
+                        "0": "No incluye timing plan."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "PLAN_002",
+                    "rubric_id": "SE_P01",
+                    "category": "Planeación",
+                    "criterion_name": "Nivel de detalle de actividades",
+                    "max_score": 25,
+                    "levels": {
+                        "4": "Las actividades y sub-actividades se encuentran correctamente desglosadas.",
+                        "3": "El desglose es adecuado con ligeros detalles faltantes.",
+                        "2": "El detalle de actividades es parcial o insuficiente.",
+                        "1": "Las actividades carecen de detalle relevante.",
+                        "0": "No presenta desglose de actividades."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "PLAN_003",
+                    "rubric_id": "SE_P01",
+                    "category": "Planeación",
+                    "criterion_name": "Despliegue de actividades en WBS",
+                    "max_score": 30,
+                    "levels": {
+                        "4": "El timing plan presenta correctamente el despliegue de actividades con 3 niveles de WBS.",
+                        "3": "N/A",
+                        "2": "El timing plan presenta parcialmente el despliegue de actividades de WBS requerido.",
+                        "1": "El nivel de despliegue de actividades no corresponde al nivel solicitado.",
+                        "0": "No desglosa actividades en los niveles requeridos de WBS."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                }
+            ]
         },
         {
             "sheet_name": "SE_P02",
-            "rubric_id": null,
-            "criteria": []
+            "rubric_id": "SE_P02",
+            "criteria": [
+                {
+                    "criterion_id": "MGM_001",
+                    "rubric_id": "SE_P02",
+                    "category": "Gestión",
+                    "criterion_name": "Puntualidad",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "La entrega se realiza en tiempo y forma.",
+                        "3": "N/A",
+                        "2": "Entrega tardía con impacto parcial en la revisión.",
+                        "1": "N/A",
+                        "0": "Entrega fuera del periodo establecido."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_001",
+                    "rubric_id": "SE_P02",
+                    "category": "Documentación",
+                    "criterion_name": "Formato de entrega",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "Cumple con el formato solicitado y nombre correcto del archivo.",
+                        "3": "N/A",
+                        "2": "El formato presenta inconsistencias relevantes.",
+                        "1": "N/A",
+                        "0": "El archivo no sigue el formato indicado."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "p02",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_001",
+                    "rubric_id": "SE_P02",
+                    "category": "Contenido",
+                    "criterion_name": "Monitoreo y rastreo de documentos",
+                    "max_score": 20,
+                    "levels": {
+                        "4": "Representa correctamente las instrucciones básicas para monitoreo y rastreo en control de versiones.",
+                        "3": "Representa la mayoría de las instrucciones requeridas.",
+                        "2": "La representación es parcial o limitada.",
+                        "1": "La representación presenta inconsistencias importantes.",
+                        "0": "No incluye evidencia relacionada al control de versiones."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "crear",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "modificar",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "actualizar",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "eliminar",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_002",
+                    "rubric_id": "SE_P02",
+                    "category": "Contenido",
+                    "criterion_name": "Seguimiento de cambios del proyecto",
+                    "max_score": 20,
+                    "levels": {
+                        "4": "Describe adecuadamente el seguimiento y control de cambios.",
+                        "3": "Describe parcialmente el seguimiento de cambios.",
+                        "2": "El seguimiento es limitado o poco claro.",
+                        "1": "La explicación carece de relación con el control de cambios.",
+                        "0": "No incluye seguimiento de cambios."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_003",
+                    "rubric_id": "SE_P02",
+                    "category": "Contenido",
+                    "criterion_name": "Capturas y evidencia del proceso",
+                    "max_score": 20,
+                    "levels": {
+                        "4": "Incluye capturas claras y relacionadas con el proceso realizado.",
+                        "3": "Incluye evidencia suficiente con ligeros detalles faltantes.",
+                        "2": "La evidencia es parcial o limitada.",
+                        "1": "Las capturas no permiten identificar correctamente el proceso.",
+                        "0": "No incluye evidencia visual del proceso."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "CON_004",
+                    "rubric_id": "SE_P02",
+                    "category": "Contenido",
+                    "criterion_name": "Descripción paso a paso",
+                    "max_score": 20,
+                    "levels": {
+                        "4": "Explica claramente cada acción realizada durante el proceso.",
+                        "3": "Explica la mayoría de las acciones realizadas.",
+                        "2": "La explicación es parcial o poco detallada.",
+                        "1": "No describe correctamente las acciones mostradas.",
+                        "0": "No incluye descripción del procedimiento."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "paso",
+                                    "min_occurrences": 6
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                }
+            ]
         },
         {
             "sheet_name": "SE_P03",
-            "rubric_id": null,
-            "criteria": []
+            "rubric_id": "SE_P03",
+            "criteria": [
+                {
+                    "criterion_id": "MGM_001",
+                    "rubric_id": "SE_P03",
+                    "category": "Gestión",
+                    "criterion_name": "Puntualidad",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "La entrega se realiza en tiempo y forma.",
+                        "3": "N/A",
+                        "2": "Entrega extemporánea con impacto parcial en la revisión.",
+                        "1": "N/A",
+                        "0": "Entrega fuera del periodo establecido."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_001",
+                    "rubric_id": "SE_P03",
+                    "category": "Documentación",
+                    "criterion_name": "Formato y consistencia del documento",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "El entregable mantiene formato consistente y actualizado conforme al template solicitado.",
+                        "3": "N/A",
+                        "2": "El entregable contiene inconsistencias relevantes de formato.",
+                        "1": "N/A",
+                        "0": "El documento presenta múltiples errores de estructura o formato."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "t01",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_002",
+                    "rubric_id": "SE_P03",
+                    "category": "Documentación",
+                    "criterion_name": "Historial de versiones y revisiones",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "El historial incluye correctamente releases, madurez y seguimiento de revisiones implementadas.",
+                        "3": "N/A",
+                        "2": "El historial es parcial o no muestra progreso claro.",
+                        "1": "N/A",
+                        "0": "No incluye historial de versiones actualizado."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_001",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Casos de uso",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "El diagrama representa correctamente actores, flujos y funcionalidades.",
+                        "3": "El diagrama cumple parcialmente con el estándar esperado.",
+                        "2": "El diagrama presenta omisiones relevantes.",
+                        "1": "El diagrama es incompleto o incorrecto.",
+                        "0": "No incluye diagrama de casos de uso."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "casos de uso",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_002",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Secuencia",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "El diagrama representa correctamente interacción y flujo entre componentes.",
+                        "3": "El flujo es adecuado con pequeños detalles por mejorar.",
+                        "2": "El diagrama presenta inconsistencias de secuencia.",
+                        "1": "El diagrama es difícil de interpretar, no cumple estándar.",
+                        "0": "No incluye diagrama de secuencia."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama de secuencia",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_003",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Clases de la arquitectura",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "El diagrama refleja correctamente relaciones y estructura del sistema.",
+                        "3": "El diseño es adecuado con ligeras inconsistencias.",
+                        "2": "El diagrama es parcial o limitado en detalle descriptivo.",
+                        "1": "El diagrama presenta errores importantes en cuanto estándar.",
+                        "0": "No incluye diagrama de clases."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama de clases",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_004",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Máquina de Estados",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "El diagrama representa correctamente estados y transiciones empleando estándar UML.",
+                        "3": "El diagrama cumple parcialmente con UML estándar.",
+                        "2": "El diagrama presenta inconsistencias o funcionalidad poco definida.",
+                        "1": "El diagrama es incompleto o incorrecto en cuanto a estándar UML.",
+                        "0": "No incluye diagrama UML estándar."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama de estados",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_005",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama Entidad Relación",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "El diagrama representa correctamente entidades, atributos y relaciones de la base de datos.",
+                        "3": "El diagrama cubre la mayoría de entidades y relaciones requeridas.",
+                        "2": "El diagrama presenta relaciones ambiguas o información parcial.",
+                        "1": "El diagrama contiene inconsistencias importantes en entidades o cardinalidad.",
+                        "0": "No incluye diagrama entidad relación."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "entidad relacion",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "erd",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_006",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de De-composición física",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "El diagrama representa correctamente la distribución física de componentes y recursos del sistema.",
+                        "3": "El diagrama describe adecuadamente la mayoría de componentes físicos requeridos.",
+                        "2": "El diagrama presenta detalle limitado o relaciones poco claras entre componentes.",
+                        "1": "El diagrama contiene inconsistencias importantes en la representación física del sistema.",
+                        "0": "No incluye diagrama de de-composición física."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "decomposicion",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "descomposicion",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_007",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Títulos y descripción de diagramas",
+                    "max_score": 10,
+                    "levels": {
+                        "4": "Todos los diagramas incluyen título, descripción y objetivo correspondiente.",
+                        "3": "La mayoría de diagramas incluyen descripción adecuada.",
+                        "2": "Algunos diagramas carecen de descripción o contexto suficiente.",
+                        "1": "Los diagramas no presentan información descriptiva adecuada.",
+                        "0": "No incluye descripción de diagramas."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama",
+                                    "min_occurrences": 12
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_008",
+                    "rubric_id": "SE_P03",
+                    "category": "Diseño",
+                    "criterion_name": "Integración y referencias del proyecto",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "El documento incluye correctamente referencias e integración con otros documentos del proyecto.",
+                        "3": "N/A",
+                        "2": "Las referencias son parciales o incompletas.",
+                        "1": "N/A",
+                        "0": "No incluye referencias de integración."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "integracion",
+                                    "min_occurrences": 3
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "SWQ_001",
+                    "rubric_id": "SE_P03",
+                    "category": "Calidad",
+                    "criterion_name": "Code Review",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Incluye adecuadamente evidencia de revisión técnica y observaciones implementadas en el documento.",
+                        "3": "N/A",
+                        "2": "La evidencia de revisión es limitada o incompleta.",
+                        "1": "La revisión no corresponde al contenido entregado o carece de seguimiento.",
+                        "0": "No incluye evidencia de Code Review."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "SWQ_002",
+                    "rubric_id": "SE_P03",
+                    "category": "Calidad",
+                    "criterion_name": "SWA Checklist",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Incluye checklist completo y alineado con los criterios del documento de arquitectura.",
+                        "3": "N/A",
+                        "2": "El checklist presenta información parcial o inconsistencias.",
+                        "1": "El checklist no corresponde al documento entregado.",
+                        "0": "No incluye SWA Checklist."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                }
+            ]
         },
         {
             "sheet_name": "SE_PIF",
-            "rubric_id": null,
-            "criteria": []
+            "rubric_id": "SE_PIF",
+            "criteria": [
+                {
+                    "criterion_id": "MGM_001",
+                    "rubric_id": "SE_PIF",
+                    "category": "Gestion del proyecto",
+                    "criterion_name": "Puntualidad",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "La entrega se realiza en tiempo y forma.",
+                        "3": "N/A",
+                        "2": "Entrega tardía con impacto parcial en la revisión.",
+                        "1": "N/A",
+                        "0": "Entrega fuera del tiempo establecido."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_001",
+                    "rubric_id": "SE_PIF",
+                    "category": "Documentación",
+                    "criterion_name": "Formato de entrega",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Cumple con el formato solicitado y nombre correcto del archivo.",
+                        "3": "N/A",
+                        "2": "El formato de entrega presenta inconsistencias relevantes.",
+                        "1": "N/A",
+                        "0": "El archivo no sigue el formato indicado."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "t01",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_002",
+                    "rubric_id": "SE_PIF",
+                    "category": "Gestion del proyecto",
+                    "criterion_name": "Colaboración en equipo",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Existe evidencia suficiente y equilibrada de colaboración.",
+                        "3": "N/A",
+                        "2": "La colaboración es limitada o desigual.",
+                        "1": "N/A",
+                        "0": "No existe evidencia de colaboración."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_002",
+                    "rubric_id": "SE_PIF",
+                    "category": "Documentación",
+                    "criterion_name": "Portada",
+                    "max_score": 2,
+                    "levels": {
+                        "4": "La portada incluye nombre del proyecto, milestone y datos completos.",
+                        "3": "La portada contiene la mayoría de los elementos requeridos.",
+                        "2": "La portada es parcial o presenta inconsistencias.",
+                        "1": "N/A",
+                        "0": "No incluye portada."
+                    },
+                    "matched_keywords": [],
+                    "manual_review": true,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_003",
+                    "rubric_id": "SE_PIF",
+                    "category": "Documentación",
+                    "criterion_name": "Índice",
+                    "max_score": 2,
+                    "levels": {
+                        "4": "El índice organiza correctamente todas las secciones del documento.",
+                        "3": "El índice presenta ligeros detalles de formato o estructura.",
+                        "2": "El índice es parcial o difícil de seguir.",
+                        "1": "N/A",
+                        "0": "No incluye índice."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "indice",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_003",
+                    "rubric_id": "SE_PIF",
+                    "category": "Planeación y análisis",
+                    "criterion_name": "Descripción del proyecto de Software",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "La descripción explica claramente alcance, funcionalidad y propósito.",
+                        "3": "La descripción es adecuada pero limitada en detalle técnico.",
+                        "2": "La descripción es ambigua o incompleta.",
+                        "1": "La descripción carece de claridad.",
+                        "0": "No incluye descripción del proyecto."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "descripcion",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_004",
+                    "rubric_id": "SE_PIF",
+                    "category": "Planeación y análisis",
+                    "criterion_name": "Justificación",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "La justificación explica claramente la necesidad y relevancia del proyecto.",
+                        "3": "La justificación es válida pero limitada en profundidad.",
+                        "2": "La justificación es parcial o poco clara.",
+                        "1": "La justificación carece de sustento.",
+                        "0": "No incluye justificación."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama de maquina de estados",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "matriz de requerimientos",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_005",
+                    "rubric_id": "SE_PIF",
+                    "category": "Planeación y análisis",
+                    "criterion_name": "Viabilidad",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "El análisis de viabilidad contempla recursos, tiempo y factibilidad.",
+                        "3": "El análisis cubre parcialmente los elementos de viabilidad.",
+                        "2": "La viabilidad es superficial o incompleta.",
+                        "1": "N/A",
+                        "0": "No incluye análisis de viabilidad."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "viabilidad",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_006",
+                    "rubric_id": "SE_PIF",
+                    "category": "Planeación y análisis",
+                    "criterion_name": "Objetivos",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Los objetivos son claros, medibles y alineados al proyecto.",
+                        "3": "Los objetivos son adecuados con ligeras áreas de mejora.",
+                        "2": "Los objetivos son ambiguos o incompletos.",
+                        "1": "Los objetivos no están bien definidos.",
+                        "0": "No incluye objetivos."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "objetivos",
+                                    "min_occurrences": 2
+                                },
+                                {
+                                    "term": "generales",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "especificos",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_007",
+                    "rubric_id": "SE_PIF",
+                    "category": "Gestion del proyecto",
+                    "criterion_name": "Riesgos",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Identifica riesgos y medidas de mitigación de forma adecuada.",
+                        "3": "Identifica riesgos relevantes con mitigación parcial.",
+                        "2": "N/A",
+                        "1": "Los riesgos son generales o incompletos.",
+                        "0": "No incluye riesgos."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "riesgos",
+                                    "min_occurrences": 2
+                                },
+                                {
+                                    "term": "mitigacion",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "contencion",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "REQ_001",
+                    "rubric_id": "SE_PIF",
+                    "category": "Requerimientos",
+                    "criterion_name": "Tabla de requerimientos",
+                    "max_score": 8,
+                    "levels": {
+                        "4": "La matriz incluye todos los campos requeridos correctamente.",
+                        "3": "La matriz cumple parcialmente; faltan algunos campos relevantes.",
+                        "2": "N/A",
+                        "1": "La matriz contiene múltiples inconsistencias.",
+                        "0": "No presenta matriz o está incompleta."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "id",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "tipo",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "funcionalidad",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "prioridad",
+                                    "min_occurrences": 1
+                                },
+                                {
+                                    "term": "id_test_case_satisfied",
+                                    "min_occurrences": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "MGM_008",
+                    "rubric_id": "SE_PIF",
+                    "category": "Planeación",
+                    "criterion_name": "Diagrama de Gantt y planeación",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "El timing plan refleja correctamente actividades y duración del proyecto.",
+                        "3": "El plan es adecuado con ligeros ajustes pendientes o cambios no reflejados.",
+                        "2": "El plan presenta inconsistencias de tiempo o secuencia.",
+                        "1": "El plan es incompleto o poco claro.",
+                        "0": "No incluye planeación del proyecto."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "gantt",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        },
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "planeacion",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_001",
+                    "rubric_id": "SE_PIF",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Casos de uso",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "El diagrama representa correctamente actores, flujos y funcionalidades.",
+                        "3": "El diagrama cumple parcialmente con el estándar esperado.",
+                        "2": "El diagrama presenta omisiones relevantes.",
+                        "1": "El diagrama es incompleto o incorrecto.",
+                        "0": "No incluye diagrama de casos de uso."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "casos de uso",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_002",
+                    "rubric_id": "SE_PIF",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Secuencia",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "El diagrama representa correctamente interacción y flujo entre componentes.",
+                        "3": "El flujo es adecuado con pequeños detalles por mejorar.",
+                        "2": "El diagrama presenta inconsistencias de secuencia.",
+                        "1": "El diagrama es difícil de interpretar, no cumple estándar.",
+                        "0": "No incluye diagrama de secuencia."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama de secuencia",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_003",
+                    "rubric_id": "SE_PIF",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Clases de la arquitectura",
+                    "max_score": 3,
+                    "levels": {
+                        "4": "El diagrama refleja correctamente relaciones y estructura del sistema.",
+                        "3": "El diseño es adecuado con ligeras inconsistencias.",
+                        "2": "El diagrama es parcial o limitado en detalle descriptivo.",
+                        "1": "El diagrama presenta errores importantes en cuanto estándar.",
+                        "0": "No incluye diagrama de clases."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "diagrama de clases",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DS_004",
+                    "rubric_id": "SE_PIF",
+                    "category": "Diseño",
+                    "criterion_name": "Diagrama de Máquina de Estados",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "El diagrama representa correctamente estados y transiciones empleando estándar UML.",
+                        "3": "El diagrama cumple parcialmente con UML estándar.",
+                        "2": "El diagrama presenta inconsistencias o funcionalidad poco definida.",
+                        "1": "El diagrama es incompleto o incorrecto en cuanto a estándar UML.",
+                        "0": "No incluye diagrama UML estándar."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "estados",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "TST_001",
+                    "rubric_id": "SE_PIF",
+                    "category": "Pruebas",
+                    "criterion_name": "Casos de prueba Modulares",
+                    "max_score": 8,
+                    "levels": {
+                        "4": "Los casos cubren correctamente escenarios, pasos y resultados esperados.",
+                        "3": "Los casos son funcionales con ligeros detalles faltantes en diseño.",
+                        "2": "Los casos presentan inconsistencias o trazabilidad limitada.",
+                        "1": "Los casos son incompletos o carecen de trazabilidad.",
+                        "0": "No incluye casos de prueba modulares."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "modular",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "TST_002",
+                    "rubric_id": "SE_PIF",
+                    "category": "Pruebas",
+                    "criterion_name": "Casos de prueba de Integración",
+                    "max_score": 8,
+                    "levels": {
+                        "4": "Los casos validan adecuadamente interacción entre módulos.",
+                        "3": "Los casos cubren parcialmente los flujos de integración.",
+                        "2": "Los casos presentan cobertura limitada o inconsistencias.",
+                        "1": "Los casos son incompletos o mal definidos.",
+                        "0": "No incluye casos de integración."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "integracion",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "TST_003",
+                    "rubric_id": "SE_PIF",
+                    "category": "Pruebas",
+                    "criterion_name": "Casos de prueba de Sistema",
+                    "max_score": 8,
+                    "levels": {
+                        "4": "Los casos validan correctamente el comportamiento completo del sistema.",
+                        "3": "Los casos cubren la mayoría de escenarios relevantes.",
+                        "2": "Los casos presentan omisiones importantes.",
+                        "1": "Los casos son insuficientes o inconsistentes.",
+                        "0": "No incluye casos de sistema."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "sistema",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "TST_004",
+                    "rubric_id": "SE_PIF",
+                    "category": "Pruebas",
+                    "criterion_name": "Reporte de pruebas",
+                    "max_score": 8,
+                    "levels": {
+                        "4": "El reporte incluye resultados y distribución de pruebas.",
+                        "3": "El reporte presenta resultados adecuados con ligeros faltantes.",
+                        "2": "El reporte es parcial o limitado en detalle.",
+                        "1": "El reporte presenta inconsistencias importantes.",
+                        "0": "No incluye reporte de pruebas."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "reporte de pruebas",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                },
+                {
+                    "criterion_id": "DOC_004",
+                    "rubric_id": "SE_PIF",
+                    "category": "Documentación",
+                    "criterion_name": "Conclusiones",
+                    "max_score": 5,
+                    "levels": {
+                        "4": "Cada integrante presenta conclusiones claras y relevantes con respecto al proyecto.",
+                        "3": "N/A",
+                        "2": "Las conclusiones presentan poco nivel de reflexión.",
+                        "1": "N/A",
+                        "0": "No incluye conclusiones propias."
+                    },
+                    "matched_keywords": [
+                        {
+                            "type": "GROUP",
+                            "keywords": [
+                                {
+                                    "term": "conclusiones",
+                                    "min_occurrences": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "manual_review": false,
+                    "obtained_score": 0,
+                    "status": "",
+                    "compatibility_mode": "hybrid",
+                    "language": "es"
+                }
+            ]
         },
         {
             "sheet_name": "README",
