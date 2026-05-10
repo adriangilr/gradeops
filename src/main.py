@@ -208,6 +208,8 @@ I18N = {
             "draft_grade": "  draftGrade: {value}",
             "resubmitted": "  reentregada: {value}",
             "ungraded": "  no evaluada: {value}",
+            "attached": "  attached: {value}",
+            "attached": "  attached: {value}",
             "has_attachments": "  attached: {value}",
         },
         "feedback": {
@@ -383,6 +385,7 @@ I18N = {
             "draft_grade": "  draftGrade: {value}",
             "resubmitted": "  resubmitted: {value}",
             "ungraded": "  ungraded: {value}",
+            "attached": "  attached: {value}",
             "has_attachments": "  attached: {value}",
         },
         "feedback": {
@@ -470,27 +473,44 @@ class _SafeFormatDict(dict):
 def t(key: str, lang: str | None = None, **kwargs: Any) -> str:
     active_lang = lang or LANG
     fallback_lang = "es"
+
+    def resolve_translation(language: str, translation_key: str) -> Any:
+        value: Any = I18N.get(language, {})
+        for part in translation_key.split("."):
+            if not isinstance(value, dict) or part not in value:
+                raise KeyError(part)
+            value = value[part]
+        return value
+
     try:
-        value: Any = I18N[active_lang]
-        for part in key.split("."):
-            value = value[part]
+        value = resolve_translation(active_lang, key)
+
     except Exception:
-        value = I18N[fallback_lang]
-        for part in key.split("."):
-            value = value[part]
+        try:
+            value = resolve_translation(fallback_lang, key)
+
+        except Exception:
+            return f"[missing_translation:{key}]"
 
     if not isinstance(value, str):
         return str(value)
 
     format_kwargs = dict(kwargs)
+
     if "type_label" in format_kwargs and "tipo" not in format_kwargs:
         format_kwargs["tipo"] = format_kwargs["type_label"]
+
     if "name" in format_kwargs and "nombre" not in format_kwargs:
         format_kwargs["nombre"] = format_kwargs["name"]
+
     if "last_name" in format_kwargs and "apellido" not in format_kwargs:
         format_kwargs["apellido"] = format_kwargs["last_name"]
 
-    return value.format_map(_SafeFormatDict(format_kwargs)) if format_kwargs else value
+    return (
+        value.format_map(_SafeFormatDict(format_kwargs))
+        if format_kwargs
+        else value
+    )
 
 
 def labels() -> dict[str, Any]:
