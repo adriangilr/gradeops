@@ -939,6 +939,46 @@ def merge_config(base: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+
+def get_rubric_schema_version(workbook) -> str:
+    """
+    Lee schema_version desde tab CONFIG del Rubric.xlsx.
+
+    Busca:
+    Column B -> "Schema Version"
+    Column C -> valor
+
+    Fallback:
+    rubric_runtime_v1
+    """
+    try:
+        if "CONFIG" not in workbook.sheetnames:
+            return "rubric_runtime_v1"
+
+        sheet = workbook["CONFIG"]
+
+        for row in sheet.iter_rows(values_only=True):
+            if not row or len(row) < 3:
+                continue
+
+            key = str(row[1] or "").strip().lower()
+
+            if key in {
+                "schema version",
+                "schema_version",
+                "version schema",
+            }:
+                value = str(row[2] or "").strip()
+
+                if value:
+                    return value
+
+    except Exception:
+        pass
+
+    return "rubric_runtime_v1"
+
+
 def build_rubric_runtime_json(
     rubric_xlsx_path: str = "config/Rubric.xlsx",
     output_json_path: str = "config/rubric_runtime.json",
@@ -963,7 +1003,7 @@ def build_rubric_runtime_json(
     if not os.path.exists(rubric_xlsx_path):
         print(f"⚠️ Rubric XLSX no encontrado: {rubric_xlsx_path}")
         return {
-            "schema_version": "rubric_runtime_v1",
+            "schema_version": schema_version,
             "generated_at": datetime.now().isoformat(),
             "source_file": rubric_xlsx_path,
             "rubrics": [],
@@ -1089,6 +1129,8 @@ def build_rubric_runtime_json(
         return best_index, best_headers
 
     workbook = load_workbook(rubric_xlsx_path, data_only=True)
+
+    schema_version = get_rubric_schema_version(workbook)
 
     runtime_data: dict[str, Any] = {
         "schema_version": "rubric_runtime_v1",
