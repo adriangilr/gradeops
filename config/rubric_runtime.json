@@ -1,0 +1,51 @@
+{
+    "schema_version": "rubric_runtime_v1",
+    "generated_at": "2026-05-09T20:47:21.136686",
+    "rubrics": [
+        {
+            "sheet_name": "CONFIG",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "SE_T01",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "SE_T02",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "SE_P01",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "SE_P02",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "SE_P03",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "SE_PIF",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "README",
+            "rubric_id": null,
+            "criteria": []
+        },
+        {
+            "sheet_name": "NS",
+            "rubric_id": null,
+            "criteria": []
+        }
+    ]
+}

@@ -22,6 +22,7 @@ from src.config import ensure_directories, get_settings
 from src.utils.naming import construir_nombre_portfolio as build_portfolio_name
 from src.config import NAMING_MODE, MAX_FOLDER_NAME_LEN
 
+from openpyxl import load_workbook
 
 try:
     from PyPDF2 import PdfReader  # type: ignore
@@ -928,6 +929,272 @@ def merge_config(base: dict[str, Any], extra: dict[str, Any]) -> dict[str, Any]:
             result[key] = value
 
     return result
+
+# comienazan cambios para transofrmar rubric
+
+def build_rubric_runtime_json(
+    rubric_xlsx_path="config/Rubric.xlsx",
+    output_json_path="config/rubric_runtime.json",
+) -> dict[str, Any]:
+    """
+    Convierte Rubric.xlsx a un JSON interno estandarizado
+    para pruebas de integracion del rubric engine.
+
+    Objetivo:
+    - NO romper el flujo actual
+    - NO modificar el schema actual del CSV
+    - Crear una capa intermedia estable
+    - Facilitar compatibilidad futura
+
+    Requiere:
+    pip install openpyxl
+
+    Estructura esperada del XLSX:
+    - 1 tab = 1 rubrica/materia
+    - Primera fila = headers
+
+    Campos esperados:
+    category
+    criterion_name
+    4-accomplished
+    3-competent
+    2-developing
+    1-beginning
+    0-not_accomplished
+    obtained_score
+    max_score
+    matched_keywords
+    status
+    manual_review
+    criterion_id
+    rubric_id
+    """
+
+    try:
+        from openpyxl import load_workbook
+    except Exception as err:
+        raise RuntimeError(
+            "openpyxl no instalado. Ejecuta: pip install openpyxl"
+        ) from err
+
+    workbook = load_workbook(rubric_xlsx_path, data_only=True)
+
+    runtime_data: dict[str, Any] = {
+        "schema_version": "rubric_runtime_v1",
+        "generated_at": datetime.now().isoformat(),
+        "rubrics": [],
+    }
+
+    for sheet in workbook.worksheets:
+
+        rows = list(sheet.iter_rows(values_only=True))
+
+        if not rows:
+            continue
+
+        headers = [
+            str(h).strip() if h is not None else ""
+            for h in rows[0]
+        ]
+
+        rubric = {
+            "sheet_name": sheet.title,
+            "rubric_id": None,
+            "criteria": [],
+        }
+
+        for row in rows[1:]:
+
+            if row is None:
+                continue
+
+            item = {
+                headers[i]: row[i]
+                for i in range(min(len(headers), len(row)))
+            }
+
+            criterion_id = str(item.get("criterion_id") or "").strip()
+            criterion_name = str(item.get("criterion_name") or "").strip()
+
+            # ignora filas vacias
+            if not criterion_id and not criterion_name:
+                continue
+
+            rubric_id = str(item.get("rubric_id") or "").strip()
+
+            if rubric["rubric_id"] is None and rubric_id:
+                rubric["rubric_id"] = rubric_id
+
+            criterion_runtime = {
+                "criterion_id": criterion_id,
+                "rubric_id": rubric_id,
+                "category": str(item.get("category") or "").strip(),
+                "criterion_name": criterion_name,
+                "max_score": safe_int(item.get("max_score"), 0),
+
+                # niveles
+                "levels": {
+                    "4": str(item.get("4-accomplished") or "").strip(),
+                    "3": str(item.get("3-competent") or "").strip(),
+                    "2": str(item.get("2-developing") or "").strip(),
+                    "1": str(item.get("1-beginning") or "").strip(),
+                    "0": str(item.get("0-not_accomplished") or "").strip(),
+                },
+
+                # heuristicas
+                "matched_keywords": parse_keywords_runtime(
+                    item.get("matched_keywords")
+                ),
+
+                # flags
+                "manual_review": normalize_bool(
+                    item.get("manual_review")
+                ),
+
+                # placeholders runtime
+                "obtained_score": safe_int(
+                    item.get("obtained_score"),
+                    0,
+                ),
+                "status": str(item.get("status") or "").strip(),
+
+                # compatibilidad futura
+                "compatibility_mode": "hybrid",
+                "language": LANG,
+            }
+
+            rubric["criteria"].append(criterion_runtime)
+
+        runtime_data["rubrics"].append(rubric)
+
+    with open(output_json_path, "w", encoding="utf-8") as f:
+        json.dump(
+            runtime_data,
+            f,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+    print(f"✅ Rubric runtime JSON generado: {output_json_path}")
+
+    return runtime_data
+
+
+def safe_int(value: Any, default: int = 0) -> int:
+    try:
+        if value is None or value == "":
+            return default
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def normalize_bool(value: Any) -> bool:
+    if value is None:
+        return False
+
+    text = str(value).strip().lower()
+
+    return text in {
+        "true",
+        "yes",
+        "y",
+        "1",
+        "si",
+        "sí",
+    }
+
+
+def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
+    """
+    Convierte:
+    diseno-2,sistema-2/modulo-3
+
+    a:
+
+    [
+        {
+            "type": "AND",
+            "keywords": [
+                {"term": "diseno", "min_occurrences": 2},
+                {"term": "sistema", "min_occurrences": 2},
+            ]
+        },
+        {
+            "type": "OR",
+            "keywords": [
+                {"term": "modulo", "min_occurrences": 3},
+            ]
+        }
+    ]
+    """
+
+    if value is None:
+        return []
+
+    text = str(value).strip()
+
+    if not text or text.upper() == "N/A":
+        return []
+
+    groups = []
+
+    or_groups = text.split("/")
+
+    for group in or_groups:
+
+        group = group.strip()
+
+        if not group:
+            continue
+
+        and_keywords = []
+
+        for token in group.split(","):
+
+            token = token.strip()
+
+            if not token:
+                continue
+
+            if "-" in token:
+                term, count = token.rsplit("-", 1)
+
+                and_keywords.append({
+                    "term": normalize_basic_ascii(term.strip().lower()),
+                    "min_occurrences": safe_int(count, 1),
+                })
+
+            else:
+                and_keywords.append({
+                    "term": normalize_basic_ascii(token.lower()),
+                    "min_occurrences": 1,
+                })
+
+        groups.append({
+            "type": "GROUP",
+            "keywords": and_keywords,
+        })
+
+    return groups
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ==========================================================
@@ -2426,6 +2693,16 @@ def process_activity(
 # ==========================================================
 
 AUTOGRADING_CONFIG = load_autograding_config()
+
+
+# ==========================================================
+# Build rubric runtime json
+# ==========================================================
+
+build_rubric_runtime_json(
+    rubric_xlsx_path="config/Rubric.xlsx",
+    output_json_path="config/rubric_runtime.json",
+)
 
 
 def main() -> None:
