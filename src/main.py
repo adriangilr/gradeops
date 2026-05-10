@@ -12,6 +12,70 @@ import unicodedata
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from dataclasses import dataclass, field
+
+
+# ==========================================================
+# Domain models (prepared for future modularization)
+# ==========================================================
+
+@dataclass
+class KeywordRule:
+    term: str
+    min_occurrences: int = 1
+
+
+@dataclass
+class KeywordGroup:
+    group_type: str
+    keywords: list[KeywordRule] = field(default_factory=list)
+
+
+@dataclass
+class CriterionRuntime:
+    criterion_id: str
+    rubric_id: str
+    category: str
+    criterion_name: str
+    max_score: int
+    levels: dict[str, str]
+    matched_keywords: list[dict[str, Any]]
+    manual_review: bool
+    obtained_score: int
+    status: str
+    compatibility_mode: str
+    language: str
+
+
+@dataclass
+class RubricRuntime:
+    sheet_name: str
+    rubric_id: str | None
+    criteria: list[CriterionRuntime] = field(default_factory=list)
+
+
+@dataclass
+class RubricValidationResult:
+    valid: bool
+    schema_version: str
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    stats: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass
+class SubmissionEvaluation:
+    submission_state: str
+    has_attachments: bool
+    submission_type: str
+    readable_content: bool
+    word_count: int
+    keyword_hits: list[str]
+    manual_review: bool
+    auto_score: int
+    confidence_score: float
+
+
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
@@ -1195,7 +1259,7 @@ def build_rubric_runtime_json(
     if not os.path.exists(rubric_xlsx_path):
         print(f"⚠️ Rubric XLSX no encontrado: {rubric_xlsx_path}")
         return {
-            "schema_version": schema_version,
+            "schema_version": "unknown",
             "generated_at": datetime.now().isoformat(),
             "source_file": rubric_xlsx_path,
             "rubrics": [],
@@ -1405,38 +1469,38 @@ def build_rubric_runtime_json(
             if rubric["rubric_id"] is None and rubric_id:
                 rubric["rubric_id"] = rubric_id
 
-            criterion_runtime = {
-                "criterion_id": criterion_id,
-                "rubric_id": rubric_id,
-                "category": category,
-                "criterion_name": criterion_name,
-                "max_score": safe_int(item.get("max_score"), 0),
+            criterion_runtime = CriterionRuntime(
+                criterion_id=criterion_id,
+                rubric_id=rubric_id,
+                category=category,
+                criterion_name=criterion_name,
+                max_score=safe_int(item.get("max_score"), 0),
 
-                "levels": {
-                    "4": str(item.get("4-accomplished") or "").strip(),
-                    "3": str(item.get("3-competent") or "").strip(),
-                    "2": str(item.get("2-developing") or "").strip(),
-                    "1": str(item.get("1-beginning") or "").strip(),
-                    "0": str(item.get("0-not_accomplished") or "").strip(),
+                levels={
+                    "4-accomplished": str(item.get("4-accomplished") or "").strip(),
+                    "3-competent": str(item.get("3-competent") or "").strip(),
+                    "2-developing": str(item.get("2-developing") or "").strip(),
+                    "1-beginning": str(item.get("1-beginning") or "").strip(),
+                    "0-not_accomplished": str(item.get("0-not_accomplished") or "").strip(),
                 },
 
-                "matched_keywords": parse_keywords_runtime(
+                matched_keywords=parse_keywords_runtime(
                     item.get("matched_keywords")
                 ),
-                "manual_review": normalize_bool(
+                manual_review=normalize_bool(
                     item.get("manual_review")
                 ),
-                "obtained_score": safe_int(
+                obtained_score=safe_int(
                     item.get("obtained_score"),
                     0,
                 ),
-                "status": str(item.get("status") or "").strip(),
+                status=str(item.get("status") or "").strip(),
 
-                "compatibility_mode": "hybrid",
-                "language": LANG,
-            }
+                compatibility_mode="hybrid",
+                language=LANG,
+            )
 
-            rubric["criteria"].append(criterion_runtime)
+            rubric["criteria"].append(criterion_runtime.__dict__)
         
         criteria_detected = len(rubric["criteria"])
         
@@ -1768,7 +1832,7 @@ def get_export_directory(settings) -> str:
     Directorio único para salidas finales del proceso.
     Centraliza todas las exportaciones en out/
     """
-    return os.path.normpath(settings.export_root)
+    return os.path.normpath(str(settings.export_root or "out"))
 
 
 # ==========================================================
