@@ -1138,7 +1138,7 @@ def validate_rubric_xlsx(
 
 def build_rubric_runtime_json(
     rubric_xlsx_path: str = "config/Rubric.xlsx",
-    output_json_path: str = "config/rubric_runtime.json",
+    output_json_path: str = "data/runtime/rubric_runtime.json",
     debug: bool = True,
 ) -> dict[str, Any]:
     """
@@ -3052,7 +3052,7 @@ AUTOGRADING_CONFIG = load_autograding_config()
 
 build_rubric_runtime_json(
     rubric_xlsx_path="config/Rubric.xlsx",
-    output_json_path="config/rubric_runtime.json",
+    output_json_path="data/runtime/rubric_runtime.json",
 )
 
 
