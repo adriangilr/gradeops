@@ -1,5 +1,33 @@
 
 # ==========================================================
+# Architectural layering strategy
+# ==========================================================
+# IMPORTANT:
+# Future modularization should be separated by logical layers,
+# NOT by file size.
+#
+# Recommended evolution:
+#
+# src/
+#   classroom/     -> Google Classroom API integration
+#   drive/         -> Drive downloads/export logic
+#   rubrics/       -> Rubric runtime + validation
+#   grading/       -> Heuristics + autograding engine
+#   runtime/       -> logging, config, i18n
+#   domain/        -> dataclasses and business entities
+#   utils/         -> generic reusable helpers
+#
+# Goal:
+# - low coupling
+# - high maintainability
+# - easier future ML integration
+# - scalable rules engine
+# - easier testing
+# ==========================================================
+
+
+
+# ==========================================================
 # Startup architecture note
 # ==========================================================
 # Heavy integrations are lazy-loaded intentionally:
@@ -33,7 +61,7 @@ from dataclasses import dataclass, field
 
 
 # ==========================================================
-# Domain models (prepared for future modularization)
+# Domain layer models (business/runtime entities)
 # ==========================================================
 
 @dataclass
@@ -628,7 +656,7 @@ def labels() -> dict[str, Any]:
 
 
 # ==========================================================
-# Runtime logging layer (prepared for future modularization)
+# Runtime infrastructure layer (logging abstraction)
 # ==========================================================
 
 LOG_LEVEL_INFO = "INFO"
@@ -1172,6 +1200,7 @@ def get_rubric_schema_version(workbook) -> str:
 
 
 
+# FUTURE MODULE: src/rubrics/validator.py
 def validate_rubric_xlsx(
     workbook,
     schema_version: str,
@@ -1328,6 +1357,7 @@ def validate_rubric_xlsx(
 
 
 
+# FUTURE MODULE: src/rubrics/runtime_builder.py
 def build_rubric_runtime_json(
     rubric_xlsx_path: str = "config/Rubric.xlsx",
     output_json_path: str = "data/runtime/rubric_runtime.json",
@@ -1648,6 +1678,7 @@ def normalize_bool(value: Any) -> bool:
     }
 
 
+# FUTURE MODULE: src/grading/keyword_engine.py
 def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
     """
     Convierte:
@@ -1956,6 +1987,7 @@ def get_drive_file_metadata(drive_service, file_id: str) -> dict[str, str]:
         }
 
 
+# FUTURE MODULE: src/drive/downloader.py
 def download_file(
     drive_service,
     file_id: str,
