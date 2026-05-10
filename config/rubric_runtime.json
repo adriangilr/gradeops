@@ -1,6 +1,6 @@
 {
-    "schema_version": "rubric_runtime_v1",
-    "generated_at": "2026-05-09T22:47:30.985361",
+    "schema_version": "1.0",
+    "generated_at": "2026-05-09T22:59:40.747100",
     "source_file": "config/Rubric.xlsx",
     "rubrics": [
         {
@@ -1622,5 +1622,22 @@
                 }
             ]
         }
-    ]
+    ],
+    "validation": {
+        "valid": false,
+        "schema_version": "unknown",
+        "errors": [
+            "Could not detect valid headers in sheet 'SE_T01'.",
+            "Could not detect valid headers in sheet 'SE_T02'.",
+            "Could not detect valid headers in sheet 'SE_P01'.",
+            "Could not detect valid headers in sheet 'SE_P02'.",
+            "Could not detect valid headers in sheet 'SE_P03'.",
+            "Could not detect valid headers in sheet 'SE_PIF'."
+        ],
+        "warnings": [],
+        "stats": {
+            "rubrics": 0,
+            "criteria": 0
+        }
+    }
 }

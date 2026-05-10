@@ -979,6 +979,163 @@ def get_rubric_schema_version(workbook) -> str:
     return "rubric_runtime_v1"
 
 
+
+def validate_rubric_xlsx(
+    workbook,
+    schema_version: str,
+) -> dict[str, Any]:
+    """
+    Valida compatibilidad y estructura mínima del Rubric.xlsx
+    antes de generar rubric_runtime.json.
+
+    Diseñado para evolucionar después a:
+    - src/rubrics/validator.py
+    - compatibility layer
+    - migration engine
+    """
+
+    validation_result = {
+        "valid": True,
+        "schema_version": "unknown",
+        "errors": [],
+        "warnings": [],
+        "stats": {
+            "rubrics": 0,
+            "criteria": 0,
+        },
+    }
+
+    required_headers = {
+        "criterion_name",
+        "criterion_id",
+        "rubric_id",
+    }
+
+    known_system_tabs = {
+        "CONFIG",
+        "README",
+        "NS",
+    }
+
+    criterion_ids_seen = set()
+
+    if "CONFIG" not in workbook.sheetnames:
+        validation_result["errors"].append(
+            "Missing required CONFIG tab."
+        )
+
+    if not schema_version:
+        validation_result["errors"].append(
+            "Missing schema_version."
+        )
+
+    for sheet in workbook.worksheets:
+
+        if sheet.title.upper() in known_system_tabs:
+            continue
+
+        rows = list(sheet.iter_rows(values_only=True))
+
+        if not rows:
+            validation_result["warnings"].append(
+                f"Sheet '{sheet.title}' is empty."
+            )
+            continue
+
+        try:
+            header_row_index, headers = find_header_row(rows)
+        except Exception:
+            validation_result["errors"].append(
+                f"Could not detect valid headers in sheet '{sheet.title}'."
+            )
+            continue
+
+        detected_headers = set(h for h in headers if h)
+
+        missing_headers = required_headers - detected_headers
+
+        if missing_headers:
+            validation_result["errors"].append(
+                f"Sheet '{sheet.title}' missing required headers: "
+                f"{sorted(missing_headers)}"
+            )
+
+        sheet_criteria = 0
+
+        for row in rows[header_row_index + 1:]:
+
+            item = {
+                headers[i]: row[i]
+                for i in range(min(len(headers), len(row)))
+                if headers[i]
+            }
+
+            criterion_id = str(item.get("criterion_id") or "").strip()
+            criterion_name = str(item.get("criterion_name") or "").strip()
+            rubric_id = str(item.get("rubric_id") or "").strip()
+
+            if not criterion_id and not criterion_name:
+                continue
+
+            sheet_criteria += 1
+
+            if not criterion_id:
+                validation_result["errors"].append(
+                    f"Sheet '{sheet.title}' has criterion without criterion_id."
+                )
+
+            if not rubric_id:
+                validation_result["warnings"].append(
+                    f"Sheet '{sheet.title}' has criterion without rubric_id."
+                )
+
+            if criterion_id:
+
+                if criterion_id in criterion_ids_seen:
+                    validation_result["errors"].append(
+                        f"Duplicated criterion_id detected: {criterion_id}"
+                    )
+
+                criterion_ids_seen.add(criterion_id)
+
+            max_score = item.get("max_score")
+
+            if max_score not in (None, ""):
+                try:
+                    int(float(max_score))
+                except Exception:
+                    validation_result["errors"].append(
+                        f"Invalid max_score in criterion '{criterion_id}'."
+                    )
+
+            matched_keywords = str(
+                item.get("matched_keywords") or ""
+            ).strip()
+
+            if matched_keywords and matched_keywords.upper() != "N/A":
+
+                invalid_tokens = [
+                    token
+                    for token in matched_keywords.split(",")
+                    if token.count("-") > 1
+                ]
+
+                if invalid_tokens:
+                    validation_result["warnings"].append(
+                        f"Possible malformed matched_keywords in "
+                        f"criterion '{criterion_id}'."
+                    )
+
+        validation_result["stats"]["rubrics"] += 1
+        validation_result["stats"]["criteria"] += sheet_criteria
+
+    if validation_result["errors"]:
+        validation_result["valid"] = False
+
+    return validation_result
+
+
+
 def build_rubric_runtime_json(
     rubric_xlsx_path: str = "config/Rubric.xlsx",
     output_json_path: str = "config/rubric_runtime.json",
@@ -1132,11 +1289,43 @@ def build_rubric_runtime_json(
 
     schema_version = get_rubric_schema_version(workbook)
 
+    validation_result = validate_rubric_xlsx(
+        workbook=workbook,
+        schema_version=schema_version,
+    )
+
+    if not validation_result["valid"]:
+    
+        print("\n❌ Rubric.xlsx validation failed:\n")
+
+        for err in validation_result["errors"]:
+            print(f"  - {err}")
+
+        print(
+            "\n⚠️ Continuing in compatibility_mode "
+            "for incremental integration.\n"
+        )
+    
+    if validation_result["warnings"]:
+
+        print("\n⚠️ Rubric.xlsx warnings:\n")
+
+        for warning in validation_result["warnings"]:
+            print(f"  - {warning}")
+
+    print(
+        f"✅ Rubric validation OK | "
+        f"rubrics={validation_result['stats']['rubrics']} | "
+        f"criteria={validation_result['stats']['criteria']} | "
+        f"schema={schema_version}"
+    )
+
     runtime_data: dict[str, Any] = {
-        "schema_version": "rubric_runtime_v1",
+        "schema_version": schema_version,
         "generated_at": datetime.now().isoformat(),
         "source_file": rubric_xlsx_path,
         "rubrics": [],
+        "validation": validation_result,
     }
 
     for sheet in workbook.worksheets:
