@@ -580,6 +580,52 @@ def labels() -> dict[str, Any]:
     return I18N.get(LANG, I18N["es"])["labels"]
 
 
+# ==========================================================
+# Runtime logging layer (prepared for future modularization)
+# ==========================================================
+
+LOG_LEVEL_INFO = "INFO"
+LOG_LEVEL_WARNING = "WARNING"
+LOG_LEVEL_ERROR = "ERROR"
+
+
+def log_message(
+    message: str,
+    level: str = LOG_LEVEL_INFO,
+) -> None:
+    """
+    Central runtime logging wrapper.
+
+    Future migration targets:
+    - logging module
+    - file logging
+    - structured JSON logs
+    - web/API logging
+    - GUI logging
+    """
+    prefixes = {
+        LOG_LEVEL_INFO: "",
+        LOG_LEVEL_WARNING: "⚠️ ",
+        LOG_LEVEL_ERROR: "❌ ",
+    }
+
+    prefix = prefixes.get(level, "")
+    print(f"{prefix}{message}")
+
+
+def log_info(message: str) -> None:
+    log_message(message, LOG_LEVEL_INFO)
+
+
+def log_warning(message: str) -> None:
+    log_message(message, LOG_LEVEL_WARNING)
+
+
+def log_error(message: str) -> None:
+    log_message(message, LOG_LEVEL_ERROR)
+
+
+
 
 
 # ==========================================================
@@ -967,7 +1013,7 @@ def select_option(
         except ValueError:
             pass
 
-        print(t("ui.invalid_option"))
+        log_warning(t("ui.invalid_option"))
 
 
 def parse_google_datetime(value: str | None) -> datetime | None:
@@ -1395,10 +1441,10 @@ def build_rubric_runtime_json(
 
     if not validation_result["valid"]:
     
-        print("\n❌ Rubric.xlsx validation failed:\n")
+        log_error("\nRubric.xlsx validation failed:\n")
 
         for err in validation_result["errors"]:
-            print(f"  - {err}")
+            log_error(f"  - {err}")
 
         print(
             "\n⚠️ Continuing in compatibility_mode "
@@ -1407,7 +1453,7 @@ def build_rubric_runtime_json(
     
     if validation_result["warnings"]:
 
-        print("\n⚠️ Rubric.xlsx warnings:\n")
+        log_warning("\nRubric.xlsx warnings:\n")
 
         for warning in validation_result["warnings"]:
             print(f"  - {warning}")
@@ -1821,7 +1867,7 @@ def confirm_download_summary(
         if input_value in {"s", "si", "sí", "y", "yes"}:
             return True
         if input_value in {"n", "no"}:
-            print(t("ui.download_cancelled"))
+            log_warning(t("ui.download_cancelled"))
             return False
 
         print(t("ui.invalid_yes_no"))
@@ -1898,11 +1944,11 @@ def download_file(
             while not done:
                 _, done = downloader.next_chunk()
 
-        print(t("runtime.downloaded", name=safe_name))
+        log_info(t("runtime.downloaded", name=safe_name))
         return file_path
 
     except HttpError as err:
-        print(t("runtime.download_error", name=file_name, err=err))
+        log_error(t("runtime.download_error", name=file_name, err=err))
         return None
 
 
