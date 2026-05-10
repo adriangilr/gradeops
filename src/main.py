@@ -1,3 +1,20 @@
+
+# ==========================================================
+# Startup architecture note
+# ==========================================================
+# Heavy integrations are lazy-loaded intentionally:
+# - googleapiclient
+# - PyPDF2
+# - python-docx
+# - python-pptx
+#
+# Benefits:
+# - faster CLI startup
+# - better compatibility on older macOS/Python
+# - lower memory footprint
+# - easier modular migration
+# ==========================================================
+
 from __future__ import annotations
 
 import csv
@@ -76,9 +93,6 @@ class SubmissionEvaluation:
     confidence_score: float
 
 
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
 
 from src.auth import get_credentials
 from src.config import ensure_directories, get_settings
@@ -87,20 +101,53 @@ from src.utils.naming import construir_nombre_portfolio as build_portfolio_name
 from src.config import NAMING_MODE, MAX_FOLDER_NAME_LEN
 
 
-try:
-    from PyPDF2 import PdfReader  # type: ignore
-except Exception:
-    PdfReader = None
 
-try:
-    from docx import Document  # type: ignore
-except Exception:
-    Document = None
 
-try:
-    from pptx import Presentation  # type: ignore
-except Exception:
-    Presentation = None
+# ==========================================================
+# Lazy imports (reduces startup cost and improves compatibility)
+# ==========================================================
+
+def get_google_build():
+    from googleapiclient.discovery import build
+    return build
+
+
+def get_http_error():
+    from googleapiclient.errors import HttpError
+    return HttpError
+
+
+def get_media_download():
+    from googleapiclient.http import MediaIoBaseDownload
+    return MediaIoBaseDownload
+
+
+def get_pdf_reader():
+    try:
+        from PyPDF2 import PdfReader  # type: ignore
+        return PdfReader
+    except Exception:
+        return None
+
+
+def get_docx_document():
+    try:
+        from docx import Document  # type: ignore
+        return Document
+    except Exception:
+        return None
+
+
+def get_pptx_presentation():
+    try:
+        from pptx import Presentation  # type: ignore
+        return Presentation
+    except Exception:
+        return None
+
+
+HttpError = get_http_error()
+
 
 # ==========================================================
 # Configuración general
@@ -1938,7 +1985,7 @@ def download_file(
 
         request = drive_service.files().get_media(fileId=file_id)
         with io.FileIO(file_path, "wb") as fh:
-            downloader = MediaIoBaseDownload(fh, request)
+            downloader = get_media_download()(fh, request)
 
             done = False
             while not done:
@@ -2384,7 +2431,7 @@ def read_pdf_text(path: str) -> str:
         return ""
 
     try:
-        reader = PdfReader(path)
+        reader = get_pdf_reader()(path)
         parts: list[str] = []
         for page in reader.pages:
             parts.append(page.extract_text() or "")
@@ -2398,7 +2445,7 @@ def read_docx_text(path: str) -> str:
         return ""
 
     try:
-        doc = Document(path)
+        doc = get_docx_document()(path)
         return "\n".join(p.text for p in doc.paragraphs if p.text)
     except Exception:
         return ""
@@ -2466,7 +2513,7 @@ def read_pptx_text(path: str) -> str:
         return ""
 
     try:
-        prs = Presentation(path)
+        prs = get_pptx_presentation()(path)
         textos = []
 
         for slide in prs.slides:
@@ -3226,8 +3273,8 @@ def main() -> None:
     print(t("runtime.token_valid", value=creds.valid))
 
     try:
-        classroom_service = build("classroom", "v1", credentials=creds)
-        drive_service = build("drive", "v3", credentials=creds)
+        classroom_service = get_google_build()("classroom", "v1", credentials=creds)
+        drive_service = get_google_build()("drive", "v3", credentials=creds)
 
         profile_scope_available = detect_profile_scope(classroom_service)
         if profile_scope_available:
