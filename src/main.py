@@ -208,7 +208,7 @@ I18N = {
             "draft_grade": "  draftGrade: {value}",
             "resubmitted": "  reentregada: {value}",
             "ungraded": "  no evaluada: {value}",
-            "attached": "  attached: {value}",
+            "has_attachments": "  attached: {value}",
         },
         "feedback": {
             "no_submission": "Sin entrega enviada. Calificacion automatica en 0.",
@@ -383,7 +383,7 @@ I18N = {
             "draft_grade": "  draftGrade: {value}",
             "resubmitted": "  resubmitted: {value}",
             "ungraded": "  ungraded: {value}",
-            "attached": "  attached: {value}",
+            "has_attachments": "  attached: {value}",
         },
         "feedback": {
             "no_submission": "No submission sent. Automatic grade set to 0.",
@@ -497,6 +497,22 @@ def labels() -> dict[str, Any]:
     return I18N.get(LANG, I18N["es"])["labels"]
 
 
+
+
+# ==========================================================
+# Internal runtime naming conventions
+# ==========================================================
+# Internal runtime/domain layer:
+# - snake_case
+# - English only
+# - explicit semantic naming
+#
+# External APIs:
+# - preserve original Google payload names
+#
+# UI layer:
+# - handled through I18N/t()
+# ==========================================================
 
 # ==========================================================
 # CSV schema e idiomas configurables
@@ -1202,7 +1218,7 @@ def build_rubric_runtime_json(
             "matched_keywords": "matched_keywords",
             "palabras_clave": "matched_keywords",
 
-            "estado": "status",
+            "submission_state": "status",
             "status": "status",
 
             "revision_manual": "manual_review",
@@ -1523,7 +1539,7 @@ def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
                 })
 
         groups.append({
-            "type": "AND_GROUP",
+            "group_type": "AND_GROUP",
             "keywords": and_keywords,
         })
 
