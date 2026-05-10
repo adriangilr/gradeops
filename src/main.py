@@ -1203,11 +1203,34 @@ def get_rubric_schema_version(workbook) -> str:
 # FUTURE MODULE: src/rubrics/validator.py
 
 def normalize_rubric_header(value: Any) -> str:
+    """
+    Normaliza headers de tabs de rubrica para validacion minima.
+    Mantiene compatibilidad con encabezados en ingles y espanol.
+    """
     text = normalize_basic_ascii(str(value or "").strip().lower())
-    text = text.replace("-", "_").replace("/", "_")
+    text = text.replace("-", "_").replace("/", "_").replace(".", "_")
     text = re.sub(r"[^a-z0-9_]+", "_", text)
     text = re.sub(r"_+", "_", text).strip("_")
-    return text
+
+    aliases = {
+        "categoria": "category",
+        "category": "category",
+
+        "criterio": "criterion_name",
+        "nombre_criterio": "criterion_name",
+        "criterion": "criterion_name",
+        "criterion_name": "criterion_name",
+
+        "id_criterio": "criterion_id",
+        "criterio_id": "criterion_id",
+        "criterion_id": "criterion_id",
+
+        "puntaje_maximo": "max_score",
+        "calificacion_maxima": "max_score",
+        "max_score": "max_score",
+    }
+
+    return aliases.get(text, text)
 
 
 def detect_sheet_headers(rows: list[tuple[Any, ...]]) -> tuple[int, list[str]]:
@@ -1224,7 +1247,7 @@ def detect_sheet_headers(rows: list[tuple[Any, ...]]) -> tuple[int, list[str]]:
     best_headers: list[str] = []
     best_score = -1
 
-    for idx, row in enumerate(rows[:20]):
+    for idx, row in enumerate(rows[:25]):
 
         headers = [
             normalize_rubric_header(cell)
@@ -1248,6 +1271,10 @@ def get_config_activity_names(config_sheet) -> list[str]:
     Esperado:
     Columna B -> Activity Name
     Columna C -> SE_T01
+
+    Nota:
+    - El flujo actual usa SOLO la primera Activity Name encontrada.
+    - Las demas tabs del workbook se ignoran.
     """
 
     activities = []
@@ -1257,13 +1284,22 @@ def get_config_activity_names(config_sheet) -> list[str]:
         if len(row) < 3:
             continue
 
-        label = str(row[1] or "").strip().lower()
+        label = normalize_basic_ascii(str(row[1] or "").strip().lower())
         value = str(row[2] or "").strip()
 
-        if label == "activity name" and value:
+        if label in {"activity name", "activity_name", "nombre actividad", "nombre_actividad"} and value:
             activities.append(value)
 
     return activities
+
+
+def get_active_activity_name_from_config(config_sheet) -> str | None:
+    """
+    Regresa la primera actividad declarada en CONFIG -> Activity Name.
+    Esta actividad es la unica fuente de verdad para validar y construir runtime.
+    """
+    activity_names = get_config_activity_names(config_sheet)
+    return activity_names[0] if activity_names else None
 
 
 def validate_rubric_xlsx(
@@ -1272,14 +1308,17 @@ def validate_rubric_xlsx(
     rubric_xlsx_path: str = "",
 ) -> dict[str, Any]:
     """
-    Validación mínima y mantenible de Rubric.xlsx.
+    Validacion estricta y acotada de Rubric.xlsx.
 
     Reglas actuales:
     - Nombre correcto: Rubric.xlsx
-    - Tabs mínimas: CONFIG y README
-    - Cada Activity Name en CONFIG debe existir como tab
-    - Cada tab de actividad debe tener al menos 1 criterio
-    - La suma de max_score debe coincidir con B8
+    - Tabs minimas: CONFIG y README
+    - CONFIG debe declarar Activity Name
+    - SOLO se valida el tab declarado en CONFIG -> Activity Name
+    - Si el tab declarado no existe, se detiene la ejecucion
+    - El tab activo debe tener al menos 1 criterio
+    - La suma de max_score del tab activo debe coincidir con la referencia configurada del mismo tab
+    - Tabs extra se ignoran por completo
     """
 
     validation_result = {
@@ -1291,6 +1330,9 @@ def validate_rubric_xlsx(
             "rubrics": 0,
             "criteria": 0,
         },
+        "active_activity_name": None,
+        "expected_total_max_score": None,
+        "detected_total_max_score": 0,
     }
 
     expected_filename = "rubric.xlsx"
@@ -1326,114 +1368,115 @@ def validate_rubric_xlsx(
 
     config_sheet = workbook["CONFIG"]
 
-    activity_names = get_config_activity_names(config_sheet)
+    activity_name = get_active_activity_name_from_config(config_sheet)
+    validation_result["active_activity_name"] = activity_name
 
-    if not activity_names:
-        validation_result["warnings"].append(
-            "No Activity Name rows detected in CONFIG."
+    if not activity_name:
+        validation_result["errors"].append(
+            "CONFIG must declare one Activity Name in column B with its value in column C."
         )
+        validation_result["valid"] = False
+        return validation_result
 
-    known_system_tabs = {
-        "CONFIG",
-        "README",
-        "NS",
+    if activity_name not in workbook.sheetnames:
+        validation_result["errors"].append(
+            f"Activity '{activity_name}' declared in CONFIG does not exist as tab."
+        )
+        validation_result["valid"] = False
+        return validation_result
+
+    sheet = workbook[activity_name]
+
+    rows = list(sheet.iter_rows(values_only=True))
+
+    if not rows:
+        validation_result["errors"].append(
+            f"Activity tab '{activity_name}' is empty."
+        )
+        validation_result["valid"] = False
+        return validation_result
+
+    header_row_index, headers = detect_sheet_headers(rows)
+    detected_headers = set(h for h in headers if h)
+
+    required_activity_headers = {
+        "criterion_name",
+        "max_score",
     }
 
-    for activity_name in activity_names:
+    missing_activity_headers = required_activity_headers - detected_headers
 
-        if activity_name not in workbook.sheetnames:
-            validation_result["errors"].append(
-                f"Activity '{activity_name}' declared in CONFIG does not exist as tab."
-            )
-            continue
-
-        sheet = workbook[activity_name]
-
-        rows = list(sheet.iter_rows(values_only=True))
-
-        if not rows:
-            validation_result["errors"].append(
-                f"Activity tab '{activity_name}' is empty."
-            )
-            continue
-
-        header_row_index, headers = detect_sheet_headers(rows)
-
-        criteria_detected = 0
-        max_score_sum = 0
-
-        for row in rows[header_row_index + 1:]:
-
-            item = {
-                headers[i]: row[i]
-                for i in range(min(len(headers), len(row)))
-                if headers[i]
-            }
-
-            criterion_name = str(
-                item.get("criterion_name") or ""
-            ).strip()
-
-            if not criterion_name:
-                continue
-
-            criteria_detected += 1
-
-            try:
-                max_score_sum += int(float(item.get("max_score") or 0))
-            except Exception:
-                validation_result["errors"].append(
-                    f"Invalid max_score detected in '{activity_name}'."
-                )
-
-        if criteria_detected == 0:
-            validation_result["errors"].append(
-                f"Activity '{activity_name}' has no valid criteria."
-            )
-
-        validation_result["stats"]["rubrics"] += 1
-        validation_result["stats"]["criteria"] += criteria_detected
-
-        expected_total = config_sheet["B8"].value
-
-        if expected_total not in (None, ""):
-
-            try:
-                expected_total = int(float(expected_total))
-
-                if max_score_sum != expected_total:
-                    validation_result["warnings"].append(
-                        f"Activity '{activity_name}' total max_score={max_score_sum} "
-                        f"does not match CONFIG B8={expected_total}."
-                    )
-
-            except Exception:
-                validation_result["warnings"].append(
-                    "CONFIG B8 max_score reference is invalid."
-                )
-
-    runtime_tabs = [
-        tab
-        for tab in workbook.sheetnames
-        if tab.upper() not in known_system_tabs
-    ]
-
-    undeclared_tabs = [
-        tab
-        for tab in runtime_tabs
-        if tab not in activity_names
-    ]
-
-    if undeclared_tabs:
-        validation_result["warnings"].append(
-            f"Tabs not declared in CONFIG Activity Name rows: {undeclared_tabs}"
+    if missing_activity_headers:
+        validation_result["errors"].append(
+            f"Activity '{activity_name}' missing required headers: "
+            f"{sorted(missing_activity_headers)}"
         )
+        validation_result["valid"] = False
+        return validation_result
+
+    criteria_detected = 0
+    max_score_sum = 0
+
+    for row in rows[header_row_index + 1:]:
+
+        item = {
+            headers[i]: row[i]
+            for i in range(min(len(headers), len(row)))
+            if headers[i]
+        }
+
+        criterion_name = str(
+            item.get("criterion_name") or ""
+        ).strip()
+
+        if not criterion_name:
+            continue
+
+        criteria_detected += 1
+
+        try:
+            max_score_sum += int(float(item.get("max_score") or 0))
+        except Exception:
+            validation_result["errors"].append(
+                f"Invalid max_score detected in '{activity_name}' for criterion '{criterion_name}'."
+            )
+
+    validation_result["stats"]["rubrics"] = 1
+    validation_result["stats"]["criteria"] = criteria_detected
+    validation_result["detected_total_max_score"] = max_score_sum
+
+    if criteria_detected == 0:
+        validation_result["errors"].append(
+            f"Activity '{activity_name}' has no valid criteria."
+        )
+
+    expected_total = sheet["B8"].value
+    validation_result["expected_total_max_score"] = expected_total
+
+    if expected_total in (None, ""):
+        validation_result["errors"].append(
+            f"Activity '{activity_name}' max_score reference is missing."
+        )
+    else:
+        try:
+            expected_total_int = int(float(expected_total))
+            validation_result["expected_total_max_score"] = expected_total_int
+
+            if max_score_sum != expected_total_int:
+                validation_result["errors"].append(
+                    f"Activity '{activity_name}' total max_score={max_score_sum} "
+                    f"does not match configured max_score reference={expected_total_int}."
+                )
+
+        except Exception:
+            validation_result["errors"].append(
+                f"Activity '{activity_name}' max_score reference is invalid."
+            )
 
     if validation_result["errors"]:
         validation_result["valid"] = False
 
     return validation_result
-
 
 
 # FUTURE MODULE: src/rubrics/runtime_builder.py
@@ -1443,12 +1486,13 @@ def build_rubric_runtime_json(
     debug: bool = True,
 ) -> dict[str, Any]:
     """
-    Convierte Rubric.xlsx a un JSON interno estandarizado.
+    Convierte SOLO la rubrica activa declarada en CONFIG -> Activity Name
+    a un JSON interno estandarizado.
 
-    Mejora clave:
-    - Detecta automaticamente la fila real de headers.
-    - Normaliza headers: mayusculas, espacios, acentos y variantes comunes.
-    - No rompe el flujo actual: solo genera config/rubric_runtime.json.
+    Comportamiento actual:
+    - CONFIG -> Activity Name es la fuente de verdad.
+    - Tabs extra se ignoran.
+    - Si la validacion falla, se detiene la ejecucion.
     """
 
     try:
@@ -1459,13 +1503,9 @@ def build_rubric_runtime_json(
         ) from err
 
     if not os.path.exists(rubric_xlsx_path):
-        print(f"⚠️ Rubric XLSX no encontrado: {rubric_xlsx_path}")
-        return {
-            "schema_version": "unknown",
-            "generated_at": datetime.now().isoformat(),
-            "source_file": rubric_xlsx_path,
-            "rubrics": [],
-        }
+        raise FileNotFoundError(
+            f"Rubric XLSX no encontrado: {rubric_xlsx_path}"
+        )
 
     def normalize_header(value: Any) -> str:
         raw = normalize_basic_ascii(str(value or "").strip().lower())
@@ -1578,7 +1618,6 @@ def build_rubric_runtime_json(
             headers = normalize_headers(row)
             score = len(set(headers) & expected)
 
-            # Header minimo util: criterion_name o criterion_id.
             if score > best_score:
                 best_index = idx
                 best_headers = headers
@@ -1597,17 +1636,16 @@ def build_rubric_runtime_json(
     )
 
     if not validation_result["valid"]:
-    
+
         log_error("\nRubric.xlsx validation failed:\n")
 
         for err in validation_result["errors"]:
             log_error(f"  - {err}")
 
-        print(
-            "\n⚠️ Continuing in compatibility_mode "
-            "for incremental integration.\n"
+        raise RuntimeError(
+            "Rubric.xlsx validation failed. Fix the rubric file before continuing."
         )
-    
+
     if validation_result["warnings"]:
 
         log_warning("\nRubric.xlsx warnings:\n")
@@ -1615,10 +1653,18 @@ def build_rubric_runtime_json(
         for warning in validation_result["warnings"]:
             print(f"  - {warning}")
 
+    active_activity_name = validation_result.get("active_activity_name")
+
+    if not active_activity_name:
+        raise RuntimeError(
+            "No active Activity Name detected after validation."
+        )
+
     print(
         f"✅ Rubric validation OK | "
-        f"rubrics={validation_result['stats']['rubrics']} | "
+        f"active_activity={active_activity_name} | "
         f"criteria={validation_result['stats']['criteria']} | "
+        f"max_score={validation_result['detected_total_max_score']} | "
         f"schema={schema_version}"
     )
 
@@ -1626,96 +1672,95 @@ def build_rubric_runtime_json(
         "schema_version": schema_version,
         "generated_at": datetime.now().isoformat(),
         "source_file": rubric_xlsx_path,
+        "active_activity_name": active_activity_name,
         "rubrics": [],
         "validation": validation_result,
     }
 
-    for sheet in workbook.worksheets:
-        rows = list(sheet.iter_rows(values_only=True))
+    sheet = workbook[active_activity_name]
+    rows = list(sheet.iter_rows(values_only=True))
 
-        if not rows:
+    header_row_index, headers = find_header_row(rows)
+
+    rubric = {
+        "sheet_name": sheet.title,
+        "rubric_id": None,
+        "criteria": [],
+    }
+
+    for row in rows[header_row_index + 1:]:
+        if row is None:
             continue
 
-        header_row_index, headers = find_header_row(rows)        
-        rubric = {
-            "sheet_name": sheet.title,
-            "rubric_id": None,
-            "criteria": [],
+        item = {
+            headers[i]: row[i]
+            for i in range(min(len(headers), len(row)))
+            if headers[i]
         }
 
-        for row in rows[header_row_index + 1:]:
-            if row is None:
-                continue
+        criterion_id = str(item.get("criterion_id") or "").strip()
+        criterion_name = str(item.get("criterion_name") or "").strip()
+        category = str(item.get("category") or "").strip()
 
-            item = {
-                headers[i]: row[i]
-                for i in range(min(len(headers), len(row)))
-                if headers[i]
-            }
+        # Ignora filas vacias, notas o instrucciones sin criterio.
+        if not criterion_id and not criterion_name and not category:
+            continue
 
-            criterion_id = str(item.get("criterion_id") or "").strip()
-            criterion_name = str(item.get("criterion_name") or "").strip()
-            category = str(item.get("category") or "").strip()
+        # Si no hay criterio, no se agrega al runtime.
+        if not criterion_name:
+            continue
 
-            # Ignora filas vacias, notas o instrucciones sin criterio.
-            if not criterion_id and not criterion_name and not category:
-                continue
+        rubric_id = str(item.get("rubric_id") or "").strip()
+        if not rubric_id:
+            rubric_id = sheet.title
 
-            # Evita que tabs como CONFIG/README se vuelvan criterios basura.
-            if not criterion_id and not criterion_name:
-                continue
+        if rubric["rubric_id"] is None and rubric_id:
+            rubric["rubric_id"] = rubric_id
 
-            rubric_id = str(item.get("rubric_id") or "").strip()
-            if not rubric_id:
-                rubric_id = sheet.title if sheet.title.upper() not in {"CONFIG", "README"} else ""
+        criterion_runtime = CriterionRuntime(
+            criterion_id=criterion_id,
+            rubric_id=rubric_id,
+            category=category,
+            criterion_name=criterion_name,
+            max_score=safe_int(item.get("max_score"), 0),
 
-            if rubric["rubric_id"] is None and rubric_id:
-                rubric["rubric_id"] = rubric_id
+            levels={
+                "4-accomplished": str(item.get("4-accomplished") or "").strip(),
+                "3-competent": str(item.get("3-competent") or "").strip(),
+                "2-developing": str(item.get("2-developing") or "").strip(),
+                "1-beginning": str(item.get("1-beginning") or "").strip(),
+                "0-not_accomplished": str(item.get("0-not_accomplished") or "").strip(),
+            },
 
-            criterion_runtime = CriterionRuntime(
-                criterion_id=criterion_id,
-                rubric_id=rubric_id,
-                category=category,
-                criterion_name=criterion_name,
-                max_score=safe_int(item.get("max_score"), 0),
+            matched_keywords=parse_keywords_runtime(
+                item.get("matched_keywords")
+            ),
+            manual_review=normalize_bool(
+                item.get("manual_review")
+            ),
+            obtained_score=safe_int(
+                item.get("obtained_score"),
+                0,
+            ),
+            status=str(item.get("status") or "").strip(),
 
-                levels={
-                    "4-accomplished": str(item.get("4-accomplished") or "").strip(),
-                    "3-competent": str(item.get("3-competent") or "").strip(),
-                    "2-developing": str(item.get("2-developing") or "").strip(),
-                    "1-beginning": str(item.get("1-beginning") or "").strip(),
-                    "0-not_accomplished": str(item.get("0-not_accomplished") or "").strip(),
-                },
+            compatibility_mode="activity_scoped",
+            language=LANG,
+        )
 
-                matched_keywords=parse_keywords_runtime(
-                    item.get("matched_keywords")
-                ),
-                manual_review=normalize_bool(
-                    item.get("manual_review")
-                ),
-                obtained_score=safe_int(
-                    item.get("obtained_score"),
-                    0,
-                ),
-                status=str(item.get("status") or "").strip(),
+        rubric["criteria"].append(criterion_runtime.__dict__)
 
-                compatibility_mode="hybrid",
-                language=LANG,
-            )
+    if DEBUG_RUBRICS or debug:
+        print(f"✅ Active rubric: {sheet.title}")
+        print(f"✅ Header row: {header_row_index + 1}")
+        print(f"✅ Criteria exported: {len(rubric['criteria'])}")
 
-            rubric["criteria"].append(criterion_runtime.__dict__)
-        
-        criteria_detected = len(rubric["criteria"])
-        
-        if DEBUG_RUBRICS:
-            print(f"\n📄 Sheet: {sheet.title}")
-            print(f"   header_row: {header_row_index + 1}")
-            print(f"   headers: {headers}")
-            print(f"   criteria_detected: {criteria_detected}")
+    if not rubric["criteria"]:
+        raise RuntimeError(
+            f"Activity '{active_activity_name}' has no criteria to export."
+        )
 
-        if rubric["criteria"]:
-            runtime_data["rubrics"].append(rubric)
-
+    runtime_data["rubrics"].append(rubric)
 
     output_dir = os.path.dirname(output_json_path)
     if output_dir:
