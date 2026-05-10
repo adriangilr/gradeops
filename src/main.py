@@ -187,7 +187,7 @@ I18N = {
             "no_courseworks_after_filter": "No quedaron actividades después de aplicar el filter_name.",
             "courseworks_found": "✅ Actividades encontradas: {total} | después del filter_name: {filtered}",
             "selected_activity": "✅ Actividad seleccionada: {value}",
-            "processing_all_courseworks": "✅ Se procesarán todas las actividades filtered_items del curso: {count}",
+            "processing_all_courseworks": "✅ Se procesarán todas las actividades filtered_courseworks del curso: {count}",
             "unknown_scope": "❌ Alcance de descarga no reconocido.",
             "final_summary": "RESUMEN FINAL",
             "activities_processed": "Actividades procesadas: {count}",
@@ -208,7 +208,6 @@ I18N = {
             "draft_grade": "  draftGrade: {value}",
             "resubmitted": "  reentregada: {value}",
             "ungraded": "  no evaluada: {value}",
-            "attached": "  attached: {value}",
             "attached": "  attached: {value}",
             "has_attachments": "  attached: {value}",
         },
@@ -864,8 +863,8 @@ def build_submission_folder_name(
     user_id = str(submission.get("userId", ""))
 
     return build_portfolio_name(
-        nombre=name,
-        apellido=last_name,
+        name=name,
+        last_name=last_name,
         user_id=user_id,
         modo=NAMING_MODE,
         max_len=MAX_FOLDER_NAME_LEN,
@@ -882,7 +881,7 @@ def select_option(
     Si allow_back=True, muestra una opción extra para volver.
     """
     while True:
-        print(f"\n{t('ui.select', tipo=type_label)}\n")
+        print(f"\n{t('ui.select', type_label=type_label)}\n")
 
         for i, item in enumerate(items, start=1):
             print(f"{i}. {item['display_name']}")
@@ -1769,7 +1768,7 @@ def get_export_directory(settings) -> str:
     Directorio único para salidas finales del proceso.
     Centraliza todas las exportaciones en out/
     """
-    return os.path.normpath("out")
+    return os.path.normpath(settings.export_root)
 
 
 # ==========================================================
@@ -2080,7 +2079,7 @@ def filter_activities(
         return [cw for cw in courseworks if is_recent_activity(cw)]
 
     if filter_name == "with_submissions":
-        filtered_items = []
+        filtered_courseworks = []
         for cw in courseworks:
             try:
                 submissions = get_all_submissions(
@@ -2089,13 +2088,13 @@ def filter_activities(
                     coursework_id=cw["id"],
                 )
                 if submissions:
-                    filtered_items.append(cw)
+                    filtered_courseworks.append(cw)
             except HttpError as err:
                 print(
                     f"⚠️ No se pudieron revisar entregas para actividad "
                     f"'{cw.get('title', cw.get('id', 'sin_titulo'))}': {err}"
                 )
-        return filtered_items
+        return filtered_courseworks
 
     return courseworks
 

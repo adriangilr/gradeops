@@ -37,8 +37,8 @@ def recortar_nombre(nombre: str, max_len: int) -> str:
 
 
 def construir_nombre_portfolio(
-    nombre: str,
-    apellido: str,
+    name: str,
+    last_name: str,
     user_id: str,
     modo: str = "portfolio",
     max_len: int = MAX_LEN_DEFAULT,
@@ -50,17 +50,17 @@ def construir_nombre_portfolio(
     - corto (solo nombre)
     """
 
-    nombre = limpiar_texto(nombre)
-    apellido = limpiar_texto(apellido)
+    name = limpiar_texto(name)
+    last_name = limpiar_texto(last_name)
 
     if modo == "corto":
-        base = f"{apellido}_{nombre}"
+        base = f"{last_name}_{name}"
 
     elif modo == "completo":
-        base = f"{apellido}_{nombre}_{user_id}"
+        base = f"{last_name}_{name}_{user_id}"
 
     else:  # portfolio
         suffix = user_id[-4:] if user_id else "0000"
-        base = f"{apellido}_{nombre}_{suffix}"
+        base = f"{last_name}_{name}_{suffix}"
 
     return recortar_nombre(base, max_len)
