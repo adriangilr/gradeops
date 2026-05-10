@@ -1113,9 +1113,9 @@ def confirm_download_summary(
 def get_export_directory(settings) -> str:
     """
     Directorio único para salidas finales del proceso.
-    Fuerza el uso de downloads/ para carpeta y zip, sin depender de download_root.
+    Centraliza todas las exportaciones en out/
     """
-    return os.path.normpath("downloads")
+    return os.path.normpath("out")
 
 
 # ==========================================================
