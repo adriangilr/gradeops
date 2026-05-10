@@ -27,6 +27,8 @@ data/logs/*
 #  Generated files
 # =========================
 out/
+# Runtime generated file
+config/rubric_runtime.json
 
 # =========================
 #  System files
