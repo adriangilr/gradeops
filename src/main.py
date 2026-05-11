@@ -1927,26 +1927,18 @@ def parse_evaluation_config(
 # FUTURE MODULE: src/grading/keyword_engine.py
 def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
     """
-    Convierte:
-    diseno-2,sistema-2/modulo-3
+    DSL soportado:
 
-    a:
+    control
+    control-2
+    control,sistema
+    control/sistema
+    control-2,sistema-1/modulo-3
 
-    [
-        {
-            "type": "AND",
-            "keywords": [
-                {"term": "diseno", "min_occurrences": 2},
-                {"term": "sistema", "min_occurrences": 2},
-            ]
-        },
-        {
-            "type": "OR",
-            "keywords": [
-                {"term": "modulo", "min_occurrences": 3},
-            ]
-        }
-    ]
+    Reglas:
+    , = AND
+    / = OR
+    -N = ocurrencias mínimas
     """
 
     if value is None:
@@ -1959,6 +1951,7 @@ def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
 
     groups = []
 
+    # OR groups
     or_groups = text.split("/")
 
     for group in or_groups:
@@ -1968,8 +1961,9 @@ def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
         if not group:
             continue
 
-        and_keywords = []
+        keywords = []
 
+        # AND tokens
         for token in group.split(","):
 
             token = token.strip()
@@ -1977,27 +1971,29 @@ def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
             if not token:
                 continue
 
+            term = token
+            min_occurrences = 1
+
+            # soporta keyword-2
             if "-" in token:
-                term, count = token.rsplit("-", 1)
 
-                and_keywords.append({
-                    "term": normalize_basic_ascii(term.strip().lower()),
-                    "min_occurrences": safe_int(count, 1),
-                })
+                possible_term, possible_count = token.rsplit("-", 1)
 
-            else:
-                and_keywords.append({
-                    "term": normalize_basic_ascii(token.lower()),
-                    "min_occurrences": 1,
-                })
+                if possible_count.isdigit():
+                    term = possible_term.strip()
+                    min_occurrences = int(possible_count)
+
+            keywords.append({
+                "term": normalize_basic_ascii(term.lower()),
+                "min_occurrences": min_occurrences,
+            })
 
         groups.append({
             "group_type": "AND_GROUP",
-            "keywords": and_keywords,
+            "keywords": keywords,
         })
 
     return groups
-
 
 
 
@@ -2073,8 +2069,14 @@ def evaluate_keywords(criterion: dict[str, Any], context: dict[str, Any]) -> dic
             else:
                 missing_keywords.append(f"{term}-{required}")
 
-        group_results.append(all(keyword_results) if keyword_results else False)
+        group_passed = (
+            all(keyword_results)
+            if keyword_results
+            else False
+        )
 
+        group_results.append(group_passed)
+        
     passed = any(group_results)
     return {
         "criterion_id": criterion.get("criterion_id", ""),
@@ -2403,6 +2405,7 @@ def confirm_download_summary(
     print(f"{t('ui.activity_filter')}: {activity_filter}")
     print(f"{t('ui.download_mode')}: {describe_download_mode(download_mode)}")
     print(f"{t('ui.output_format')}: {output_format}")
+    
 
     if selected_activity is not None:
         print(f"{t('ui.activity')}: {selected_activity.get('display_name', selected_activity.get('title', t('fallbacks.untitled')))}")
@@ -3124,6 +3127,7 @@ def analyze_text_content(
     - calcula suficiencia mínima configurable
     - detecta palabras clave opcionales
     """
+    criterion_results = []
     clean_text = re.sub(r"\s+", " ", text or "").strip()
     palabras = re.findall(r"\b\w+\b", clean_text, flags=re.UNICODE)
     word_count = len(palabras)
@@ -3162,7 +3166,16 @@ def analyze_text_content(
         for keyword in keyword_list:
             kw = str(keyword).strip().lower()
             if kw and kw in texto_lower:
-                keyword_hits.append(kw)
+                
+                criterion_keyword_hits = []
+                for result in criterion_results:
+
+                    for keyword in result.get("matched_keywords", []):
+
+                        if keyword not in criterion_keyword_hits:
+                            criterion_keyword_hits.append(keyword)
+
+                keyword_hits = criterion_keyword_hits
 
     minimum_matches = int(keywords_cfg.get("minimum_matches", 1))
     keywords_ok = len(keyword_hits) >= minimum_matches if keyword_list else True
