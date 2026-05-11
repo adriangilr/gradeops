@@ -83,6 +83,12 @@ class CriterionRuntime:
     category: str
     criterion_name: str
     max_score: int
+    criterion_type: str
+    evaluation_strategy: str
+    evaluation_config: dict[str, Any]
+    schema_type: str
+    evaluation_phase: str
+    evidence_source: str
     levels: dict[str, str]
     matched_keywords: list[dict[str, Any]]
     manual_review: bool
@@ -184,6 +190,8 @@ HttpError = get_http_error()
 DEBUG_RUBRICS = False
 RECENT_DAYS = 30
 AUTOGRADING_CONFIG_FILENAME = "autograding_rules.json"
+RUBRIC_SCHEMA_TYPE = "criterion_runtime_v1"
+RUBRIC_RUNTIME_VERSION = "v1.1"
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tiff", ".tif"}
 
 DEFAULT_AUTOGRADING_CONFIG = {
@@ -738,11 +746,13 @@ CSV_OUTPUT_COLUMNS = [
     "requires_manual_review",
     "confidence_score",
     "auto_score",
+    "rubric_score",
     "auto_feedback",
     "auto_grading_reason",
     "ai_feedback",
     "final_grade",
     "final_feedback",
+    "criterion_results_json",
 ]
 
 
@@ -1548,6 +1558,17 @@ def build_rubric_runtime_json(
 
             "revision_manual": "manual_review",
             "manual_review": "manual_review",
+
+            "fase_evaluacion": "evaluation_phase",
+            "evaluation_phase": "evaluation_phase",
+            "fuente_evidencia": "evidence_source",
+            "evidence_source": "evidence_source",
+            "estrategia_evaluacion": "evaluation_strategy",
+            "evaluation_strategy": "evaluation_strategy",
+            "configuracion_evaluacion": "evaluation_config",
+            "evaluation_config": "evaluation_config",
+            "tipo_criterio": "criterion_type",
+            "criterion_type": "criterion_type",
         }
 
         level_aliases = {
@@ -1670,6 +1691,8 @@ def build_rubric_runtime_json(
 
     runtime_data: dict[str, Any] = {
         "schema_version": schema_version,
+        "schema_type": RUBRIC_SCHEMA_TYPE,
+        "runtime_version": RUBRIC_RUNTIME_VERSION,
         "generated_at": datetime.now().isoformat(),
         "source_file": rubric_xlsx_path,
         "active_activity_name": active_activity_name,
@@ -1717,12 +1740,30 @@ def build_rubric_runtime_json(
         if rubric["rubric_id"] is None and rubric_id:
             rubric["rubric_id"] = rubric_id
 
+        matched_keyword_groups = parse_keywords_runtime(
+            item.get("matched_keywords")
+        )
+        criterion_type = infer_criterion_type(item, matched_keyword_groups)
+        evaluation_strategy = resolve_evaluation_strategy(
+            item.get("evaluation_strategy"),
+            criterion_type,
+        )
+
         criterion_runtime = CriterionRuntime(
             criterion_id=criterion_id,
             rubric_id=rubric_id,
             category=category,
             criterion_name=criterion_name,
             max_score=safe_int(item.get("max_score"), 0),
+            criterion_type=criterion_type,
+            evaluation_strategy=evaluation_strategy,
+            evaluation_config=parse_evaluation_config(
+                item.get("evaluation_config"),
+                matched_keyword_groups,
+            ),
+            schema_type=RUBRIC_SCHEMA_TYPE,
+            evaluation_phase=str(item.get("evaluation_phase") or "submission").strip(),
+            evidence_source=str(item.get("evidence_source") or "submission_content").strip(),
 
             levels={
                 "4-accomplished": str(item.get("4-accomplished") or "").strip(),
@@ -1732,9 +1773,7 @@ def build_rubric_runtime_json(
                 "0-not_accomplished": str(item.get("0-not_accomplished") or "").strip(),
             },
 
-            matched_keywords=parse_keywords_runtime(
-                item.get("matched_keywords")
-            ),
+            matched_keywords=matched_keyword_groups,
             manual_review=normalize_bool(
                 item.get("manual_review")
             ),
@@ -1801,6 +1840,79 @@ def normalize_bool(value: Any) -> bool:
         "si",
         "sí",
     }
+
+
+# FUTURE MODULE: src/grading/runtime_schema.py
+def normalize_optional_text(value: Any, default: str = "") -> str:
+    text = str(value or "").strip()
+    if not text or text.upper() == "N/A":
+        return default
+    return text
+
+
+def infer_criterion_type(
+    item: dict[str, Any],
+    matched_keyword_groups: list[dict[str, Any]],
+) -> str:
+    explicit_type = normalize_optional_text(item.get("criterion_type"))
+    if explicit_type:
+        return normalize_basic_ascii(explicit_type.lower()).replace(" ", "_")
+
+    criterion_name = normalize_basic_ascii(
+        str(item.get("criterion_name") or "").lower()
+    )
+
+    if "puntualidad" in criterion_name:
+        return "late_policy"
+    if normalize_bool(item.get("manual_review")) and not matched_keyword_groups:
+        return "manual_review"
+    if matched_keyword_groups:
+        return "keyword_match"
+    return "hybrid"
+
+
+def resolve_evaluation_strategy(value: Any, criterion_type: str) -> str:
+    explicit_strategy = normalize_optional_text(value)
+    if explicit_strategy:
+        return normalize_basic_ascii(explicit_strategy.lower()).replace(" ", "_")
+
+    strategy_by_type = {
+        "keyword_match": "keyword_engine",
+        "semantic_presence": "keyword_engine",
+        "structure_validation": "keyword_engine",
+        "checklist": "keyword_engine",
+        "minimum_words": "sufficiency_engine",
+        "document_presence": "attachment_engine",
+        "file_type": "attachment_engine",
+        "manual_review": "manual_review_engine",
+        "late_policy": "late_policy_engine",
+        "hybrid": "hybrid_engine",
+    }
+    return strategy_by_type.get(criterion_type, "hybrid_engine")
+
+
+def parse_evaluation_config(
+    value: Any,
+    matched_keyword_groups: list[dict[str, Any]],
+) -> dict[str, Any]:
+    config: dict[str, Any] = {}
+
+    if value is not None:
+        raw = str(value).strip()
+        if raw and raw.upper() != "N/A":
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    config.update(parsed)
+                else:
+                    config["raw"] = parsed
+            except Exception:
+                config["raw"] = raw
+
+    if matched_keyword_groups:
+        config.setdefault("keyword_groups", matched_keyword_groups)
+
+    return config
 
 
 # FUTURE MODULE: src/grading/keyword_engine.py
@@ -1894,6 +2006,236 @@ def parse_keywords_runtime(value: Any) -> list[dict[str, Any]]:
 
 
 
+
+
+# ==========================================================
+# Criterion-centric heuristic bridge (V1 -> V2)
+# ==========================================================
+
+def normalize_text_for_matching(text: str) -> str:
+    return normalize_basic_ascii(str(text or "").lower())
+
+
+def count_term_occurrences(text: str, term: str) -> int:
+    normalized_text = normalize_text_for_matching(text)
+    normalized_term = normalize_text_for_matching(term)
+    if not normalized_text or not normalized_term:
+        return 0
+    return normalized_text.count(normalized_term)
+
+
+def evaluate_keywords(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    max_score = safe_int(criterion.get("max_score"), 0)
+    groups = criterion.get("matched_keywords") or criterion.get("evaluation_config", {}).get("keyword_groups", [])
+    text = context.get("text", "")
+
+    if not groups:
+        return {
+            "criterion_id": criterion.get("criterion_id", ""),
+            "criterion_name": criterion.get("criterion_name", ""),
+            "criterion_type": criterion.get("criterion_type", "hybrid"),
+            "evaluation_strategy": criterion.get("evaluation_strategy", "keyword_engine"),
+            "score": 0,
+            "max_score": max_score,
+            "status": "NOT_EVALUATED",
+            "matched_keywords": [],
+            "missing_keywords": [],
+            "manual_review": bool(criterion.get("manual_review", False)),
+            "confidence": 0.30,
+        }
+
+    matched_keywords: list[str] = []
+    missing_keywords: list[str] = []
+    group_results: list[bool] = []
+
+    for group in groups:
+        keywords = group.get("keywords", [])
+        keyword_results = []
+
+        for keyword in keywords:
+            term = str(keyword.get("term") or "").strip()
+            required = safe_int(keyword.get("min_occurrences"), 1)
+            occurrences = count_term_occurrences(text, term)
+            passed = occurrences >= required
+            keyword_results.append(passed)
+
+            if passed:
+                matched_keywords.append(term)
+            else:
+                missing_keywords.append(f"{term}-{required}")
+
+        group_results.append(all(keyword_results) if keyword_results else False)
+
+    passed = any(group_results)
+    return {
+        "criterion_id": criterion.get("criterion_id", ""),
+        "criterion_name": criterion.get("criterion_name", ""),
+        "criterion_type": criterion.get("criterion_type", "keyword_match"),
+        "evaluation_strategy": criterion.get("evaluation_strategy", "keyword_engine"),
+        "score": max_score if passed else 0,
+        "max_score": max_score,
+        "status": "PASS" if passed else "FAIL",
+        "matched_keywords": sorted(set(matched_keywords)),
+        "missing_keywords": sorted(set(missing_keywords)),
+        "manual_review": bool(criterion.get("manual_review", False)),
+        "confidence": 0.80 if passed else 0.55,
+    }
+
+
+def evaluate_sufficiency(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    max_score = safe_int(criterion.get("max_score"), 0)
+    word_count = safe_int(context.get("word_count"), 0)
+    readable = bool(context.get("readable_content", False))
+    status = "PASS" if readable and word_count >= 50 else "PARTIAL" if readable and word_count >= 10 else "FAIL"
+    score = max_score if status == "PASS" else int(max_score * 0.5) if status == "PARTIAL" else 0
+    return {
+        "criterion_id": criterion.get("criterion_id", ""),
+        "criterion_name": criterion.get("criterion_name", ""),
+        "criterion_type": criterion.get("criterion_type", "minimum_words"),
+        "evaluation_strategy": criterion.get("evaluation_strategy", "sufficiency_engine"),
+        "score": score,
+        "max_score": max_score,
+        "status": status,
+        "matched_keywords": [],
+        "missing_keywords": [],
+        "manual_review": bool(criterion.get("manual_review", False)),
+        "confidence": 0.70,
+    }
+
+
+def evaluate_attachment(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    max_score = safe_int(criterion.get("max_score"), 0)
+    has_attachment = bool(context.get("has_attachment", False))
+    return {
+        "criterion_id": criterion.get("criterion_id", ""),
+        "criterion_name": criterion.get("criterion_name", ""),
+        "criterion_type": criterion.get("criterion_type", "document_presence"),
+        "evaluation_strategy": criterion.get("evaluation_strategy", "attachment_engine"),
+        "score": max_score if has_attachment else 0,
+        "max_score": max_score,
+        "status": "PASS" if has_attachment else "FAIL",
+        "matched_keywords": [],
+        "missing_keywords": [],
+        "manual_review": bool(criterion.get("manual_review", False)),
+        "confidence": 0.75,
+    }
+
+
+def evaluate_late_policy(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    max_score = safe_int(criterion.get("max_score"), 0)
+    submitted = bool(context.get("submitted", False))
+    days_late = safe_int(context.get("days_late"), 0)
+    is_late_submission = bool(context.get("late", False)) or days_late > 0
+
+    if not submitted:
+        score = 0
+        status = "FAIL"
+    elif is_late_submission:
+        score = int(max_score * 0.5)
+        status = "PARTIAL"
+    else:
+        score = max_score
+        status = "PASS"
+
+    return {
+        "criterion_id": criterion.get("criterion_id", ""),
+        "criterion_name": criterion.get("criterion_name", ""),
+        "criterion_type": criterion.get("criterion_type", "late_policy"),
+        "evaluation_strategy": criterion.get("evaluation_strategy", "late_policy_engine"),
+        "score": score,
+        "max_score": max_score,
+        "status": status,
+        "matched_keywords": [],
+        "missing_keywords": [],
+        "manual_review": False,
+        "confidence": 0.90,
+    }
+
+
+def evaluate_manual_review_criterion(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    max_score = safe_int(criterion.get("max_score"), 0)
+    return {
+        "criterion_id": criterion.get("criterion_id", ""),
+        "criterion_name": criterion.get("criterion_name", ""),
+        "criterion_type": criterion.get("criterion_type", "manual_review"),
+        "evaluation_strategy": criterion.get("evaluation_strategy", "manual_review_engine"),
+        "score": 0,
+        "max_score": max_score,
+        "status": "MANUAL_REVIEW",
+        "matched_keywords": [],
+        "missing_keywords": [],
+        "manual_review": True,
+        "confidence": 0.20,
+    }
+
+
+def evaluate_hybrid_criterion(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    if criterion.get("matched_keywords"):
+        return evaluate_keywords(criterion, context)
+    if bool(criterion.get("manual_review", False)):
+        return evaluate_manual_review_criterion(criterion, context)
+    return evaluate_attachment(criterion, context)
+
+
+ENGINE_REGISTRY = {
+    "keyword_engine": evaluate_keywords,
+    "sufficiency_engine": evaluate_sufficiency,
+    "attachment_engine": evaluate_attachment,
+    "late_policy_engine": evaluate_late_policy,
+    "manual_review_engine": evaluate_manual_review_criterion,
+    "hybrid_engine": evaluate_hybrid_criterion,
+}
+
+
+def evaluate_criterion(criterion: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    strategy = str(criterion.get("evaluation_strategy") or "hybrid_engine").strip()
+    engine = ENGINE_REGISTRY.get(strategy, evaluate_hybrid_criterion)
+    result = engine(criterion, context)
+    result.setdefault("criterion_id", criterion.get("criterion_id", ""))
+    result.setdefault("criterion_name", criterion.get("criterion_name", ""))
+    result.setdefault("evaluation_strategy", strategy)
+    return result
+
+
+def get_active_rubric(runtime_data: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not runtime_data:
+        return None
+    rubrics = runtime_data.get("rubrics") or []
+    if not rubrics:
+        return None
+    return rubrics[0]
+
+
+def evaluate_criteria_for_submission(
+    runtime_data: dict[str, Any] | None,
+    context: dict[str, Any],
+) -> list[dict[str, Any]]:
+    active_rubric = get_active_rubric(runtime_data)
+    if not active_rubric:
+        return []
+
+    results = []
+    for criterion in active_rubric.get("criteria", []):
+        results.append(evaluate_criterion(criterion, context))
+    return results
+
+
+def aggregate_criterion_results(criterion_results: list[dict[str, Any]]) -> dict[str, Any]:
+    total_score = sum(safe_int(item.get("score"), 0) for item in criterion_results)
+    total_max_score = sum(safe_int(item.get("max_score"), 0) for item in criterion_results)
+    requires_manual_review = any(bool(item.get("manual_review")) for item in criterion_results)
+
+    if total_max_score <= 0:
+        normalized_score = 0
+    else:
+        normalized_score = round((total_score / total_max_score) * 100)
+
+    return {
+        "rubric_score": max(0, min(100, int(normalized_score))),
+        "criterion_score_sum": total_score,
+        "criterion_max_score_sum": total_max_score,
+        "requires_manual_review": requires_manual_review,
+    }
 
 
 # ==========================================================
@@ -2584,27 +2926,61 @@ def read_txt_text(path: str) -> str:
 
 
 def read_pdf_text(path: str) -> str:
+
+    PdfReader = get_pdf_reader()
+
     if PdfReader is None:
+        log_warning(
+            "PyPDF2 no disponible. Instala con: pip install PyPDF2"
+        )
         return ""
 
     try:
-        reader = get_pdf_reader()(path)
-        parts: list[str] = []
+        reader = PdfReader(path)
+
+        text_parts = []
+
         for page in reader.pages:
-            parts.append(page.extract_text() or "")
-        return "\n".join(parts)
-    except Exception:
+            try:
+                page_text = page.extract_text() or ""
+                text_parts.append(page_text)
+
+            except Exception:
+                continue
+
+        return "\n".join(text_parts)
+
+    except Exception as err:
+        log_warning(f"Error leyendo PDF '{path}': {err}")
         return ""
 
 
 def read_docx_text(path: str) -> str:
+    """
+    Extrae texto DOCX usando lazy loading.
+    """
+
+    Document = get_docx_document()
+
     if Document is None:
+        log_warning(
+            "python-docx no disponible. Instala con: pip install python-docx"
+        )
         return ""
 
     try:
-        doc = get_docx_document()(path)
-        return "\n".join(p.text for p in doc.paragraphs if p.text)
-    except Exception:
+        doc = Document(path)
+
+        paragraphs = [
+            p.text.strip()
+            for p in doc.paragraphs
+            if p.text and p.text.strip()
+        ]
+
+        return "\n".join(paragraphs)
+
+    except Exception as err:
+        log_warning(f"Error leyendo DOCX '{path}': {err}")
         return ""
 
 
@@ -2665,23 +3041,41 @@ def get_primary_file_type(rutas: list[str]) -> str:
     return ""
 
 
+
 def read_pptx_text(path: str) -> str:
+    """
+    Extrae texto PPTX usando lazy loading.
+    """
+
+    Presentation = get_pptx_presentation()
+
     if Presentation is None:
+        log_warning(
+            "python-pptx no disponible. Instala con: pip install python-pptx"
+        )
         return ""
 
     try:
-        prs = get_pptx_presentation()(path)
-        textos = []
+        presentation = Presentation(path)
 
-        for slide in prs.slides:
+        text_parts = []
+
+        for slide in presentation.slides:
+
             for shape in slide.shapes:
+
                 if hasattr(shape, "text"):
-                    textos.append(shape.text)
+                    text = str(shape.text or "").strip()
 
-        return "\n".join(textos)
-    except Exception:
+                    if text:
+                        text_parts.append(text)
+
+        return "\n".join(text_parts)
+
+    except Exception as err:
+        log_warning(f"Error leyendo PPTX '{path}': {err}")
         return ""
-
+    
 
 def extract_file_text(path: str) -> str:
     """
@@ -3055,9 +3449,31 @@ def evaluate_submission_automatically(
         manual_review=manual_review,
     )
 
+    criterion_context = {
+        "text": merged_text,
+        "submitted": submitted,
+        "late": late,
+        "has_attachment": has_attachment,
+        "readable_content": bool(analysis["readable_content"]),
+        "word_count": int(analysis["word_count"]),
+        "char_count": int(analysis["char_count"]),
+        "days_late": days_late,
+        "submission_type": submission_type,
+        "primary_file_type": primary_file_type,
+        "downloaded_paths": downloaded_paths,
+    }
+    criterion_results = evaluate_criteria_for_submission(
+        RUBRIC_RUNTIME_DATA,
+        criterion_context,
+    )
+    criterion_summary = aggregate_criterion_results(criterion_results)
+
     return {
         "auto_grade": auto_grade,
         "auto_score": auto_grade,
+        "rubric_score": criterion_summary["rubric_score"],
+        "criterion_results": criterion_results,
+        "criterion_results_json": json.dumps(criterion_results, ensure_ascii=False),
         "feedback": auto_feedback,
         "auto_feedback": auto_feedback,
         "auto_grading_reason": auto_grading_reason,
@@ -3077,8 +3493,8 @@ def evaluate_submission_automatically(
         "detected_characters": int(analysis["char_count"]),
         "keyword_hits": ", ".join(keyword_hits_list),
         "keyword_hits_list": keyword_hits_list,
-        "manual_review": bool_to_text(manual_review),
-        "requires_manual_review": bool_to_text(manual_review),
+        "manual_review": bool_to_text(manual_review or criterion_summary["requires_manual_review"]),
+        "requires_manual_review": bool_to_text(manual_review or criterion_summary["requires_manual_review"]),
         "readable_content": bool_to_text(bool(analysis["readable_content"])),
         "is_readable": bool_to_text(bool(analysis["readable_content"])),
     }
@@ -3327,6 +3743,9 @@ def process_activity(
             evaluation = {
                 "auto_grade": 0,
                 "auto_score": 0,
+                "rubric_score": 0,
+                "criterion_results": [],
+                "criterion_results_json": "[]",
                 "feedback": t("feedback.no_submission"),
                 "auto_feedback": t("feedback.no_submission"),
                 "auto_grading_reason": t("feedback.reason_no_submission"),
@@ -3352,6 +3771,7 @@ def process_activity(
             }
 
         print(f"  auto_grade: {evaluation['auto_grade']}")
+        print(f"  rubric_score: {evaluation.get('rubric_score', evaluation['auto_grade'])}")
         print(f"  content_score: {evaluation['content_score']}")
         print(f"  readable_content: {evaluation['readable_content']}")
         print(f"  manual_review: {evaluation['manual_review']}")
@@ -3377,11 +3797,13 @@ def process_activity(
                 "requires_manual_review": str(evaluation["requires_manual_review"]).lower(),
                 "confidence_score": f"{float(evaluation['confidence_score']):.2f}",
                 "auto_score": str(evaluation["auto_score"]),
+                "rubric_score": str(evaluation.get("rubric_score", evaluation["auto_score"])),
                 "auto_feedback": normalize_basic_ascii(evaluation["auto_feedback"]),
                 "auto_grading_reason": normalize_basic_ascii(evaluation["auto_grading_reason"]),
                 "ai_feedback": "",
                 "final_grade": "",
                 "final_feedback": "",
+                "criterion_results_json": evaluation.get("criterion_results_json", "[]"),
             }
         )
 
@@ -3399,7 +3821,7 @@ AUTOGRADING_CONFIG = load_autograding_config()
 # Build rubric runtime json
 # ==========================================================
 
-build_rubric_runtime_json(
+RUBRIC_RUNTIME_DATA = build_rubric_runtime_json(
     rubric_xlsx_path="config/Rubric.xlsx",
     output_json_path="data/runtime/rubric_runtime.json",
 )
