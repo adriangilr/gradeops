@@ -193,6 +193,9 @@ AUTOGRADING_CONFIG_FILENAME = "autograding_rules.json"
 RUBRIC_SCHEMA_TYPE = "criterion_runtime_v1"
 RUBRIC_RUNTIME_VERSION = "v1.1"
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tiff", ".tif"}
+EXPORTS_DIRECTORY = "data/exports"
+EVALUATION_RESULTS_FILENAME = "evaluation_results.json"
+
 
 DEFAULT_AUTOGRADING_CONFIG = {
     "weights": {
@@ -1025,6 +1028,12 @@ def prepare_output_directory(path: str, limpiar_si_existe: bool = False) -> str:
     ensure_directory(path)
     return path
 
+def build_export_path(filename: str) -> str:
+    """
+    Centraliza archivos exportables del sistema.
+    """
+    ensure_directory(EXPORTS_DIRECTORY)
+    return os.path.join(EXPORTS_DIRECTORY, filename)
 
 def ensure_extension(name: str, mime_type: str) -> str:
     """
@@ -3597,6 +3606,43 @@ def write_summary_csv(csv_path: str, filas: list[dict[str, str]]) -> None:
     print(f"\n{t('runtime.csv_generated', path=csv_path)}")
 
 
+def export_evaluation_results_json(
+    rows: list[dict[str, Any]],
+    output_path: str | None = None,
+) -> str:
+    """
+    Export intermedio normalizado.
+    Futuro source-of-truth antes de CSV/PDF/API.
+    """
+
+    if output_path is None:
+        output_path = build_export_path(
+            EVALUATION_RESULTS_FILENAME
+        )
+
+    ensure_directory(os.path.dirname(output_path))
+
+    payload = {
+        "generated_at": datetime.now().isoformat(),
+        "schema_type": "submission_evaluation_results_v1",
+        "total_rows": len(rows),
+        "evaluations": rows,
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(
+            payload,
+            f,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+    log_info(
+        f"✅ Evaluation results JSON generado: {output_path}"
+    )
+
+    return output_path
+
 def compress_folder_to_zip(carpeta_origen: str, zip_sin_extension: str) -> str:
     """
     Comprime toda la carpeta en un zip.
@@ -3990,7 +4036,7 @@ def main() -> None:
                                     profile_scope_available=profile_scope_available,
                                 )
 
-                                nombre_csv = "resumen_entregas.csv"
+                                nombre_csv = "evaluation_results_ag.csv"
                                 nombre_zip = course_slug
 
                             elif download_scope == "all_courseworks":
@@ -4038,6 +4084,7 @@ def main() -> None:
 
                             csv_path = os.path.join(base_folder, nombre_csv)
                             write_summary_csv(csv_path, csv_rows)
+                            export_evaluation_results_json(csv_rows)
 
                             if output_format == "zip_and_folder":
                                 zip_base_name = os.path.join(export_directory, nombre_zip)
