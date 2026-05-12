@@ -1,23 +1,21 @@
 # ==========================================================
-# publish.py
-# Standalone Google Classroom publisher
+# publish_confirm_auto.py
+# GradeOps-AI
 # ==========================================================
 
 from __future__ import annotations
 
 import os
 import sys
-import pandas as pd
+import unicodedata
 from typing import Any
+
+import pandas as pd
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-
-# ==========================================================
-# Config
-# ==========================================================
 
 CSV_FILENAME = "src/evaluation_results_ag.csv"
 
@@ -33,6 +31,14 @@ REQUIRED_COLUMNS = [
 SCOPES = [
     "https://www.googleapis.com/auth/classroom.coursework.students",
     "https://www.googleapis.com/auth/classroom.rosters.readonly",
+]
+
+ENCODINGS = [
+    "utf-8",
+    "utf-8-sig",
+    "cp1252",
+    "latin1",
+    "macroman",
 ]
 
 
@@ -53,6 +59,64 @@ def log_error(message: str) -> None:
 
 
 # ==========================================================
+# Encoding Repair Layer
+# ==========================================================
+
+def repair_mojibake(text: str) -> str:
+
+    if not isinstance(text, str):
+        return text
+
+    try:
+        return text.encode("latin1").decode("utf-8")
+    except Exception:
+        return text
+
+
+# ==========================================================
+# Unicode Normalization Layer
+# ==========================================================
+
+def normalize_unicode(text: str) -> str:
+
+    if pd.isna(text):
+        return ""
+
+    text = str(text).strip()
+
+    text = unicodedata.normalize(
+        "NFKD",
+        text
+    )
+
+    text = (
+        text
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+
+    return text
+
+
+# ==========================================================
+# Semantic Normalization Layer
+# ==========================================================
+
+def normalize_text(text: str) -> str:
+
+    if pd.isna(text):
+        return ""
+
+    text = str(text)
+
+    text = repair_mojibake(text)
+
+    text = normalize_unicode(text)
+
+    return text.lower().strip()
+
+
+# ==========================================================
 # CSV Validation
 # ==========================================================
 
@@ -65,13 +129,41 @@ def validate_csv_schema(df: pd.DataFrame) -> None:
     ]
 
     if missing:
+
         log_error(
-            "CSV schema inválido. "
+            "CSV schema invalido. "
             f"Faltan columnas requeridas: {missing}"
         )
+
         sys.exit(1)
 
     log_info("CSV schema validado correctamente.")
+
+
+# ==========================================================
+# CSV Loader
+# ==========================================================
+
+def load_csv_safe(csv_path):
+
+    last_error = None
+
+    for enc in ENCODINGS:
+
+        try:
+
+            print(f"Trying encoding: {enc}")
+
+            return pd.read_csv(
+                csv_path,
+                encoding=enc,
+            )
+
+        except UnicodeDecodeError as e:
+
+            last_error = e
+
+    raise last_error
 
 
 # ==========================================================
@@ -83,7 +175,9 @@ def build_classroom_service():
     token_path = "token.json"
 
     if not os.path.exists(token_path):
-        log_error("No se encontró token.json")
+
+        log_error("No se encontro token.json")
+
         sys.exit(1)
 
     credentials = Credentials.from_authorized_user_file(
@@ -119,11 +213,13 @@ def find_course(
 
     courses = results.get("courses", [])
 
+    normalized_course_name = normalize_text(course_name)
+
     for course in courses:
 
-        name = str(course.get("name", "")).strip()
+        name = str(course.get("name", ""))
 
-        if name.lower() == course_name.strip().lower():
+        if normalize_text(name) == normalized_course_name:
             return course
 
     return None
@@ -144,11 +240,15 @@ def find_coursework(
 
     courseworks = results.get("courseWork", [])
 
+    normalized_activity_name = normalize_text(
+        activity_name
+    )
+
     for coursework in courseworks:
 
-        title = str(coursework.get("title", "")).strip()
+        title = str(coursework.get("title", ""))
 
-        if title.lower() == activity_name.strip().lower():
+        if normalize_text(title) == normalized_activity_name:
             return coursework
 
     return None
@@ -172,7 +272,16 @@ def find_student_submission(
         .execute()
     )
 
-    items = submissions.get("studentSubmissions", [])
+    items = submissions.get(
+        "studentSubmissions",
+        [],
+    )
+
+    normalized_email = (
+        student_email
+        .strip()
+        .lower()
+    )
 
     for submission in items:
 
@@ -192,7 +301,7 @@ def find_student_submission(
                 .lower()
             )
 
-            if email == student_email.strip().lower():
+            if email == normalized_email:
                 return submission
 
         except Exception:
@@ -202,20 +311,20 @@ def find_student_submission(
 
 
 # ==========================================================
-# Publish Grade + Feedback
+# Publish Layer
 # ==========================================================
 
-def publish_grade_and_feedback(
+def publish_grade(
     service,
     course_id: str,
     coursework_id: str,
     submission_id: str,
     final_grade: float,
-    final_feedback: str,
 ) -> None:
 
     patch_body = {
         "draftGrade": final_grade,
+        "assignedGrade": final_grade,
     }
 
     (
@@ -226,57 +335,20 @@ def publish_grade_and_feedback(
             courseId=course_id,
             courseWorkId=coursework_id,
             id=submission_id,
-            updateMask="draftGrade",
+            updateMask="draftGrade,assignedGrade",
             body=patch_body,
         )
         .execute()
     )
 
-    if final_feedback.strip():
-
-        comment_body = {
-            "text": final_feedback
-        }
-
-        (
-            service.courses()
-            .courseWork()
-            .studentSubmissions()
-            .modifyAttachments(
-                courseId=course_id,
-                courseWorkId=coursework_id,
-                id=submission_id,
-                body={}
-            )
-            .execute()
-        )
-
-        (
-            service.courses()
-            .announcements()
-        )
-
-    (
-        service.courses()
-        .courseWork()
-        .studentSubmissions()
-        .return_(
-            courseId=course_id,
-            courseWorkId=coursework_id,
-            id=submission_id,
-            body={}
-        )
-        .execute()
-    )
-
     log_info(
-        f"Actividad retornada correctamente "
+        f"Calificacion publicada "
         f"(submission={submission_id})"
     )
 
 
 # ==========================================================
-# Main CSV Processor
+# CSV Processing
 # ==========================================================
 
 def process_csv(
@@ -285,10 +357,12 @@ def process_csv(
 ) -> None:
 
     if not os.path.exists(csv_path):
+
         log_error(f"No existe CSV: {csv_path}")
+
         sys.exit(1)
 
-    df = pd.read_csv(csv_path)
+    df = load_csv_safe(csv_path)
 
     validate_csv_schema(df)
 
@@ -296,17 +370,50 @@ def process_csv(
 
     log_info(f"Filas detectadas: {total_rows}")
 
-    for index, row in df.iterrows():
+    auto_publish_all = False
+
+    for _, row in df.iterrows():
 
         try:
 
-            course_name = str(row["course_name"]).strip()
-            activity_name = str(row["activity_name"]).strip()
-            student_name = str(row["student_name"]).strip()
-            student_mail = str(row["student_mail"]).strip()
+            course_name = str(
+                row["course_name"]
+            ).strip()
 
-            final_grade = float(row["final_grade"])
-            final_feedback = str(row["final_feedback"]).strip()
+            activity_name = str(
+                row["activity_name"]
+            ).strip()
+
+            student_name = str(
+                row["student_name"]
+            ).strip()
+
+            student_mail = str(
+                row["student_mail"]
+            ).strip()
+
+            if pd.isna(row["final_grade"]):
+
+                log_warning(
+                    f"final_grade vacio para "
+                    f"{student_name}"
+                )
+
+                continue
+
+            final_grade = float(
+                row["final_grade"]
+            )
+
+            final_feedback = ""
+
+            if not pd.isna(
+                row["final_feedback"]
+            ):
+
+                final_feedback = str(
+                    row["final_feedback"]
+                ).strip()
 
             print("\n--------------------------------------------------")
             print(f"Alumno: {student_name}")
@@ -314,13 +421,54 @@ def process_csv(
             print(f"Curso: {course_name}")
             print(f"Actividad: {activity_name}")
 
+            # ==================================================
+            # PREVIEW
+            # ==================================================
+
+            print("")
+            print("==================================================")
+            print("PREVIEW DE EVALUACION")
+            print("==================================================")
+            print(f"final_grade    : {final_grade}")
+            print(f"final_feedback : {final_feedback}")
+            print("==================================================")
+
+            if not auto_publish_all:
+
+                preview_input = input(
+                    "[ENTER]=continuar | "
+                    "c=corregir y cancelar | "
+                    "a=automatico : "
+                ).strip().lower()
+
+                if preview_input == "c":
+
+                    log_warning(
+                        "Evaluacion marcada para correccion."
+                    )
+
+                    continue
+
+                if preview_input == "a":
+
+                    auto_publish_all = True
+
+                    log_info(
+                        "Modo automatico habilitado."
+                    )
+
             course = find_course(
                 service,
                 course_name,
             )
 
             if not course:
-                log_warning(f"Curso no encontrado: {course_name}")
+
+                log_warning(
+                    f"Curso no encontrado: "
+                    f"{course_name}"
+                )
+
                 continue
 
             course_id = course["id"]
@@ -332,9 +480,12 @@ def process_csv(
             )
 
             if not coursework:
+
                 log_warning(
-                    f"Actividad no encontrada: {activity_name}"
+                    f"Actividad no encontrada: "
+                    f"{activity_name}"
                 )
+
                 continue
 
             coursework_id = coursework["id"]
@@ -347,32 +498,40 @@ def process_csv(
             )
 
             if not submission:
+
                 log_warning(
-                    f"No se encontró submission para: {student_mail}"
+                    f"No se encontro submission "
+                    f"para: {student_mail}"
                 )
+
                 continue
 
             submission_id = submission["id"]
 
-            publish_grade_and_feedback(
+            publish_grade(
                 service=service,
                 course_id=course_id,
                 coursework_id=coursework_id,
                 submission_id=submission_id,
                 final_grade=final_grade,
-                final_feedback=final_feedback,
             )
 
             log_info(
-                f"Publicado correctamente para "
-                f"{student_name}"
+                f"Publicado correctamente "
+                f"para {student_name}"
             )
 
         except HttpError as err:
-            log_error(f"Google API error: {err}")
+
+            log_error(
+                f"Google API error: {err}"
+            )
 
         except Exception as err:
-            log_error(f"Error inesperado: {err}")
+
+            log_error(
+                f"Error inesperado: {err}"
+            )
 
 
 # ==========================================================
@@ -380,6 +539,12 @@ def process_csv(
 # ==========================================================
 
 def main():
+
+    print("")
+    print("==================================================")
+    print("GradeOps-AI Publisher")
+    print("==================================================")
+    print("")
 
     service = build_classroom_service()
 
