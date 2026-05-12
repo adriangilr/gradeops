@@ -451,9 +451,18 @@ def publish_grade(
     service,
     course_id,
     coursework_id,
-    submission_id,
+    submission,
     final_grade,
 ):
+
+    submission_id = submission["id"]
+
+    print("")
+    print("==================================================")
+    print("DEBUG SUBMISSION")
+    print("==================================================")
+    print(submission)
+    print("==================================================")
 
     if DRY_RUN:
 
@@ -667,13 +676,11 @@ def process_csv(
 
                 continue
 
-            submission_id = submission["id"]
-
             publish_grade(
                 service=service,
                 course_id=course_id,
                 coursework_id=coursework_id,
-                submission_id=submission_id,
+                submission=submission,
                 final_grade=final_grade,
             )
 
