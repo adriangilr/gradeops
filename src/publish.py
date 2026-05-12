@@ -1,5 +1,5 @@
 # ==========================================================
-# publish_precheck.py
+# pub-men.py
 # GradeOps-AI
 # ==========================================================
 
@@ -8,11 +8,15 @@ from __future__ import annotations
 import os
 import sys
 import unicodedata
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -31,6 +35,8 @@ REQUIRED_COLUMNS = [
 SCOPES = [
     "https://www.googleapis.com/auth/classroom.coursework.students",
     "https://www.googleapis.com/auth/classroom.rosters.readonly",
+    "https://www.googleapis.com/auth/classroom.profile.emails",
+    "https://www.googleapis.com/auth/classroom.courses.readonly",
 ]
 
 ENCODINGS = [
@@ -40,6 +46,8 @@ ENCODINGS = [
     "latin1",
     "macroman",
 ]
+
+DRY_RUN = False
 
 
 # ==========================================================
@@ -59,7 +67,71 @@ def log_error(message: str) -> None:
 
 
 # ==========================================================
-# Encoding Repair Layer
+# OAuth
+# ==========================================================
+
+def get_credentials(
+    credentials_path: Path,
+    token_path: Path,
+) -> Credentials:
+
+    creds = None
+
+    if token_path.exists():
+
+        creds = Credentials.from_authorized_user_file(
+            str(token_path),
+            SCOPES,
+        )
+
+    if creds and creds.expired and creds.refresh_token:
+
+        log_warning(
+            "Token expirado. Renovando..."
+        )
+
+        creds.refresh(Request())
+
+        token_path.write_text(
+            creds.to_json(),
+            encoding="utf-8",
+        )
+
+    elif not creds or not creds.valid:
+
+        if not credentials_path.exists():
+
+            log_error(
+                f"No existe: {credentials_path}"
+            )
+
+            sys.exit(1)
+
+        log_info(
+            "Abriendo navegador OAuth..."
+        )
+
+        flow = InstalledAppFlow.from_client_secrets_file(
+            str(credentials_path),
+            SCOPES,
+        )
+
+        creds = flow.run_local_server(port=0)
+
+        token_path.write_text(
+            creds.to_json(),
+            encoding="utf-8",
+        )
+
+        log_info(
+            "Nuevo token.json generado."
+        )
+
+    return creds
+
+
+# ==========================================================
+# Encoding
 # ==========================================================
 
 def repair_mojibake(text: str) -> str:
@@ -72,10 +144,6 @@ def repair_mojibake(text: str) -> str:
     except Exception:
         return text
 
-
-# ==========================================================
-# Unicode Normalization Layer
-# ==========================================================
 
 def normalize_unicode(text: str) -> str:
 
@@ -98,10 +166,6 @@ def normalize_unicode(text: str) -> str:
     return text
 
 
-# ==========================================================
-# Semantic Normalization Layer
-# ==========================================================
-
 def normalize_text(text: str) -> str:
 
     if pd.isna(text):
@@ -117,7 +181,7 @@ def normalize_text(text: str) -> str:
 
 
 # ==========================================================
-# CSV Validation
+# CSV
 # ==========================================================
 
 def validate_csv_schema(df: pd.DataFrame) -> None:
@@ -131,18 +195,13 @@ def validate_csv_schema(df: pd.DataFrame) -> None:
     if missing:
 
         log_error(
-            "CSV schema invalido. "
-            f"Faltan columnas requeridas: {missing}"
+            f"Faltan columnas: {missing}"
         )
 
         sys.exit(1)
 
     log_info("CSV schema validado correctamente.")
 
-
-# ==========================================================
-# CSV Loader
-# ==========================================================
 
 def load_csv_safe(csv_path):
 
@@ -167,63 +226,17 @@ def load_csv_safe(csv_path):
 
 
 # ==========================================================
-# Precheck Layer
-# ==========================================================
-
-def show_publish_summary(df: pd.DataFrame):
-
-    total_rows = len(df)
-
-    valid_grades = df["final_grade"].notna().sum()
-
-    manual_review = total_rows - valid_grades
-
-    course_name = "N/A"
-
-    if total_rows > 0:
-        course_name = str(
-            df.iloc[0]["course_name"]
-        )
-
-    print("")
-    print("==================================================")
-    print("RESUMEN DE PUBLICACION")
-    print("==================================================")
-    print(f"Curso             : {course_name}")
-    print(f"Evaluaciones      : {valid_grades}")
-    print(f"Manual review     : {manual_review}")
-    print("==================================================")
-
-    user_input = input(
-        "¿Continuar? [ ENTER=continuar / c=cancelar] : "
-    ).strip().lower()
-
-    if user_input == "c":
-
-        log_warning(
-            "Proceso cancelado por usuario."
-        )
-
-        sys.exit(0)
-
-
-# ==========================================================
-# Google Auth
+# Classroom
 # ==========================================================
 
 def build_classroom_service():
 
-    token_path = "token.json"
+    credentials_path = Path("credentials/client_secret.json")
+    token_path = Path("token.json")
 
-    if not os.path.exists(token_path):
-
-        log_error("No se encontro token.json")
-
-        sys.exit(1)
-
-    credentials = Credentials.from_authorized_user_file(
-        token_path,
-        SCOPES,
+    credentials = get_credentials(
+        credentials_path=credentials_path,
+        token_path=token_path,
     )
 
     service = build(
@@ -237,14 +250,7 @@ def build_classroom_service():
     return service
 
 
-# ==========================================================
-# Classroom Search Helpers
-# ==========================================================
-
-def find_course(
-    service,
-    course_name: str,
-) -> dict[str, Any] | None:
+def select_course(service):
 
     results = (
         service.courses()
@@ -254,23 +260,37 @@ def find_course(
 
     courses = results.get("courses", [])
 
-    normalized_course_name = normalize_text(course_name)
+    if not courses:
 
-    for course in courses:
+        log_error("No se encontraron cursos.")
 
-        name = str(course.get("name", ""))
+        sys.exit(1)
 
-        if normalize_text(name) == normalized_course_name:
-            return course
+    print("")
+    print("==================================================")
+    print("MATERIAS DISPONIBLES")
+    print("==================================================")
 
-    return None
+    for idx, course in enumerate(courses, start=1):
+
+        print(
+            f"{idx}. {course.get('name')} "
+            f"({course.get('id')})"
+        )
+
+    print("==================================================")
+
+    selected = int(
+        input("Selecciona materia: ")
+    ) - 1
+
+    return courses[selected]
 
 
-def find_coursework(
+def select_coursework(
     service,
-    course_id: str,
-    activity_name: str,
-) -> dict[str, Any] | None:
+    course_id,
+):
 
     results = (
         service.courses()
@@ -279,28 +299,48 @@ def find_coursework(
         .execute()
     )
 
-    courseworks = results.get("courseWork", [])
-
-    normalized_activity_name = normalize_text(
-        activity_name
+    courseworks = results.get(
+        "courseWork",
+        [],
     )
 
-    for coursework in courseworks:
+    if not courseworks:
 
-        title = str(coursework.get("title", ""))
+        log_error(
+            "No se encontraron actividades."
+        )
 
-        if normalize_text(title) == normalized_activity_name:
-            return coursework
+        sys.exit(1)
 
-    return None
+    print("")
+    print("==================================================")
+    print("ACTIVIDADES DISPONIBLES")
+    print("==================================================")
+
+    for idx, coursework in enumerate(
+        courseworks,
+        start=1,
+    ):
+
+        print(
+            f"{idx}. {coursework.get('title')}"
+        )
+
+    print("==================================================")
+
+    selected = int(
+        input("Selecciona actividad: ")
+    ) - 1
+
+    return courseworks[selected]
 
 
 def find_student_submission(
     service,
-    course_id: str,
-    coursework_id: str,
-    student_email: str,
-) -> dict[str, Any] | None:
+    course_id,
+    coursework_id,
+    student_email,
+):
 
     submissions = (
         service.courses()
@@ -352,20 +392,81 @@ def find_student_submission(
 
 
 # ==========================================================
-# Publish Layer
+# Summary
+# ==========================================================
+
+def show_publish_summary(
+    df,
+    course_name,
+    activity_name,
+):
+
+    total_rows = len(df)
+
+    valid_grades = df[
+        "final_grade"
+    ].notna().sum()
+
+    manual_review = 0
+
+    if "requires_manual_review" in df.columns:
+
+        manual_review = (
+            df["requires_manual_review"]
+            .astype(str)
+            .str.upper()
+            .eq("TRUE")
+            .sum()
+        )
+
+    print("")
+    print("==================================================")
+    print("RESUMEN DE PUBLICACION")
+    print("==================================================")
+    print(f"Curso             : {course_name}")
+    print(f"Actividad         : {activity_name}")
+    print(f"Evaluaciones      : {valid_grades}")
+    print(f"Manual review     : {manual_review}")
+    print(f"DRY_RUN           : {DRY_RUN}")
+    print("==================================================")
+
+    user_input = input(
+        "¿Continuar? [ENTER/c] : "
+    ).strip().lower()
+
+    if user_input == "c":
+
+        log_warning(
+            "Proceso cancelado."
+        )
+
+        sys.exit(0)
+
+
+# ==========================================================
+# Publish
 # ==========================================================
 
 def publish_grade(
     service,
-    course_id: str,
-    coursework_id: str,
-    submission_id: str,
-    final_grade: float,
-) -> None:
+    course_id,
+    coursework_id,
+    submission_id,
+    final_grade,
+):
+
+    if DRY_RUN:
+
+        log_warning(
+            f"[DRY_RUN] "
+            f"submission={submission_id} "
+            f"grade={final_grade}"
+        )
+
+        return
 
     patch_body = {
         "draftGrade": final_grade,
-        "assignedGrade": final_grade,
     }
 
     (
@@ -376,30 +477,31 @@ def publish_grade(
             courseId=course_id,
             courseWorkId=coursework_id,
             id=submission_id,
-            updateMask="draftGrade,assignedGrade",
+            updateMask="draftGrade",
             body=patch_body,
         )
         .execute()
     )
 
     log_info(
-        f"Calificacion publicada "
-        f"(submission={submission_id})"
+        f"Publicado submission={submission_id}"
     )
 
 
 # ==========================================================
-# CSV Processing
+# Main Processing
 # ==========================================================
 
 def process_csv(
     service,
-    csv_path: str,
-) -> None:
+    csv_path,
+):
 
     if not os.path.exists(csv_path):
 
-        log_error(f"No existe CSV: {csv_path}")
+        log_error(
+            f"No existe CSV: {csv_path}"
+        )
 
         sys.exit(1)
 
@@ -407,25 +509,98 @@ def process_csv(
 
     validate_csv_schema(df)
 
-    show_publish_summary(df)
+    selected_course = select_course(service)
 
-    total_rows = len(df)
+    course_id = selected_course["id"]
 
-    log_info(f"Filas detectadas: {total_rows}")
+    selected_coursework = select_coursework(
+        service,
+        course_id,
+    )
+
+    coursework_id = selected_coursework["id"]
+
+    selected_course_name = normalize_text(
+        selected_course["name"]
+    )
+
+    selected_activity_name = normalize_text(
+        selected_coursework["title"]
+    )
+
+    df["course_name_normalized"] = (
+        df["course_name"]
+        .astype(str)
+        .apply(normalize_text)
+    )
+
+    df["activity_name_normalized"] = (
+        df["activity_name"]
+        .astype(str)
+        .apply(normalize_text)
+    )
+
+    # ------------------------------------------------------
+    # v1 publishing strategy
+    # ------------------------------------------------------
+    # The selected Google Classroom activity is the publish target.
+    # CSV activity_name is not used for matching yet because current
+    # courses and activities are not fully standardized.
+    #
+    # For now, the CSV only provides:
+    # - student_name
+    # - student_mail
+    # - final_grade
+    # - final_feedback
+    #
+    # Future evolution:
+    # Replace this with coursework_id or exact activity matching.
+    # ------------------------------------------------------
+
+    log_warning(
+        "Activity matching deshabilitado. "
+        "Usando todas las filas del CSV para la actividad seleccionada."
+    )
+
+    filtered_df = df.copy()
+
+    print("")
+    print("==================================================")
+    print("DEBUG PUBLISH TARGET")
+    print("==================================================")
+    print(f"selected_course_name   : {selected_course_name}")
+    print(f"selected_activity_name : {selected_activity_name}")
+
+    print("")
+    print("CSV activities detectadas:")
+
+    for activity in (
+        df["activity_name_normalized"]
+        .dropna()
+        .unique()
+    ):
+        print(f" - {activity}")
+
+
+    if filtered_df.empty:
+
+        log_error(
+            "El CSV no contiene filas para publicar."
+        )
+
+        sys.exit(1)
+
+    show_publish_summary(
+        filtered_df,
+        selected_course["name"],
+        selected_coursework["title"],
+    )
 
     auto_publish_all = False
 
-    for _, row in df.iterrows():
+    for _, row in filtered_df.iterrows():
 
         try:
-
-            course_name = str(
-                row["course_name"]
-            ).strip()
-
-            activity_name = str(
-                row["activity_name"]
-            ).strip()
 
             student_name = str(
                 row["student_name"]
@@ -435,34 +610,18 @@ def process_csv(
                 row["student_mail"]
             ).strip()
 
-            if pd.isna(row["final_grade"]):
-
-                log_warning(
-                    f"final_grade vacio para "
-                    f"{student_name}"
-                )
-
-                continue
-
             final_grade = float(
                 row["final_grade"]
             )
 
-            final_feedback = ""
-
-            if not pd.isna(
+            final_feedback = str(
                 row["final_feedback"]
-            ):
+            ).strip()
 
-                final_feedback = str(
-                    row["final_feedback"]
-                ).strip()
-
-            print("\n--------------------------------------------------")
-            print(f"Alumno: {student_name}")
-            print(f"Correo: {student_mail}")
-            print(f"Curso: {course_name}")
-            print(f"Actividad: {activity_name}")
+            print("")
+            print("--------------------------------------------------")
+            print(f"Alumno    : {student_name}")
+            print(f"Correo    : {student_mail}")
 
             print("")
             print("==================================================")
@@ -476,59 +635,21 @@ def process_csv(
 
                 preview_input = input(
                     "[ENTER]=continuar | "
-                    "c=corregir y cancelar | "
+                    "c=cancelar | "
                     "a=automatico : "
                 ).strip().lower()
 
                 if preview_input == "c":
 
                     log_warning(
-                        "Proceso detenido para correccion manual."
+                        "Proceso cancelado."
                     )
-                    #con continue podria solo marcarse y pasar a la siguiente evaluacion
-                    #salimos
+
                     return
 
                 if preview_input == "a":
 
                     auto_publish_all = True
-
-                    log_info(
-                        "Modo automatico habilitado."
-                    )
-
-            course = find_course(
-                service,
-                course_name,
-            )
-
-            if not course:
-
-                log_warning(
-                    f"Curso no encontrado: "
-                    f"{course_name}"
-                )
-
-                continue
-
-            course_id = course["id"]
-
-            coursework = find_coursework(
-                service,
-                course_id,
-                activity_name,
-            )
-
-            if not coursework:
-
-                log_warning(
-                    f"Actividad no encontrada: "
-                    f"{activity_name}"
-                )
-
-                continue
-
-            coursework_id = coursework["id"]
 
             submission = find_student_submission(
                 service,
@@ -540,8 +661,8 @@ def process_csv(
             if not submission:
 
                 log_warning(
-                    f"No se encontro submission "
-                    f"para: {student_mail}"
+                    f"No submission: "
+                    f"{student_mail}"
                 )
 
                 continue
@@ -554,11 +675,6 @@ def process_csv(
                 coursework_id=coursework_id,
                 submission_id=submission_id,
                 final_grade=final_grade,
-            )
-
-            log_info(
-                f"Publicado correctamente "
-                f"para {student_name}"
             )
 
         except HttpError as err:
@@ -575,7 +691,7 @@ def process_csv(
 
 
 # ==========================================================
-# Entry Point
+# Entry
 # ==========================================================
 
 def main():
@@ -584,7 +700,6 @@ def main():
     print("==================================================")
     print("GradeOps-AI Publisher")
     print("==================================================")
-    print("")
 
     service = build_classroom_service()
 
