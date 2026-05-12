@@ -1,5 +1,5 @@
 # ==========================================================
-# publish_confirm_auto.py
+# publish_precheck.py
 # GradeOps-AI
 # ==========================================================
 
@@ -164,6 +164,47 @@ def load_csv_safe(csv_path):
             last_error = e
 
     raise last_error
+
+
+# ==========================================================
+# Precheck Layer
+# ==========================================================
+
+def show_publish_summary(df: pd.DataFrame):
+
+    total_rows = len(df)
+
+    valid_grades = df["final_grade"].notna().sum()
+
+    manual_review = total_rows - valid_grades
+
+    course_name = "N/A"
+
+    if total_rows > 0:
+        course_name = str(
+            df.iloc[0]["course_name"]
+        )
+
+    print("")
+    print("==================================================")
+    print("RESUMEN DE PUBLICACION")
+    print("==================================================")
+    print(f"Curso             : {course_name}")
+    print(f"Evaluaciones      : {valid_grades}")
+    print(f"Manual review     : {manual_review}")
+    print("==================================================")
+
+    user_input = input(
+        "¿Continuar? [ ENTER=continuar / c=cancelar] : "
+    ).strip().lower()
+
+    if user_input == "c":
+
+        log_warning(
+            "Proceso cancelado por usuario."
+        )
+
+        sys.exit(0)
 
 
 # ==========================================================
@@ -366,6 +407,8 @@ def process_csv(
 
     validate_csv_schema(df)
 
+    show_publish_summary(df)
+
     total_rows = len(df)
 
     log_info(f"Filas detectadas: {total_rows}")
@@ -421,10 +464,6 @@ def process_csv(
             print(f"Curso: {course_name}")
             print(f"Actividad: {activity_name}")
 
-            # ==================================================
-            # PREVIEW
-            # ==================================================
-
             print("")
             print("==================================================")
             print("PREVIEW DE EVALUACION")
@@ -444,10 +483,11 @@ def process_csv(
                 if preview_input == "c":
 
                     log_warning(
-                        "Evaluacion marcada para correccion."
+                        "Proceso detenido para correccion manual."
                     )
-
-                    continue
+                    #con continue podria solo marcarse y pasar a la siguiente evaluacion
+                    #salimos
+                    return
 
                 if preview_input == "a":
 
