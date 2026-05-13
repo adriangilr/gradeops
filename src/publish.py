@@ -423,11 +423,12 @@ def show_publish_summary(
     print("==================================================")
     print("RESUMEN DE PUBLICACION")
     print("==================================================")
-    print(f"Curso             : {course_name}")
-    print(f"Actividad         : {activity_name}")
-    print(f"Evaluaciones      : {valid_grades}")
-    print(f"Manual review     : {manual_review}")
-    print(f"DRY_RUN           : {DRY_RUN}")
+    print(f"Curso Clsr                     : {course_name}")
+    print(f"Actividad Clsr                 : {activity_name}")
+    print(f"Evaluaciones detectadas en")
+    print(f" src/evaluation_results_ag.csv : {valid_grades}")
+    print(f"Manual review                  : {manual_review}")
+    print(f"DRY_RUN                        : {DRY_RUN}")
     print("==================================================")
 
     user_input = input(
@@ -451,18 +452,9 @@ def publish_grade(
     service,
     course_id,
     coursework_id,
-    submission,
+    submission_id,
     final_grade,
 ):
-
-    submission_id = submission["id"]
-
-    print("")
-    print("==================================================")
-    print("DEBUG SUBMISSION")
-    print("==================================================")
-    print(submission)
-    print("==================================================")
 
     if DRY_RUN:
 
@@ -476,6 +468,7 @@ def publish_grade(
 
     patch_body = {
         "draftGrade": final_grade,
+        "assignedGrade": final_grade,
     }
 
     (
@@ -486,7 +479,7 @@ def publish_grade(
             courseId=course_id,
             courseWorkId=coursework_id,
             id=submission_id,
-            updateMask="draftGrade",
+            updateMask="draftGrade,assignedGrade",
             body=patch_body,
         )
         .execute()
@@ -676,11 +669,13 @@ def process_csv(
 
                 continue
 
+            submission_id = submission["id"]
+
             publish_grade(
                 service=service,
                 course_id=course_id,
                 coursework_id=coursework_id,
-                submission=submission,
+                submission_id=submission_id,
                 final_grade=final_grade,
             )
 
